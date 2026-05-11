@@ -3,7 +3,7 @@ class PostUrl extends Post
 {
     public string $defaultFormBox = "https://example.com";
     public string $checkedUrlIn = "";
-    public  string  $check = "url";
+    public string  $check = "url";
     public string $formAnswerUrl = "";
     public string $urlState = "";
 
@@ -28,13 +28,18 @@ class PostUrl extends Post
                     $this->urlState = "url not working";
                 };
         }
-        $this->setFormBoxUrl();
+        $this->setUrlState();
     }
 
-    private function setFormBoxUrl()
+    // public static function setUrlState(string $state) //"NOT set", "isset", "url not working"
+    // {
+    //     self::urlState = $state;
+    // }
+
+    private function setUrlState()
     {
         switch ($this->urlState) {
-            case "NOT set":
+            case "NOT set":;
             case "isset":;
                 break;
             case "url not working":
@@ -42,7 +47,7 @@ class PostUrl extends Post
         }
     }
 
-    private function checkContentType(String $url)
+    private function checkContentType(string $url)
     {
 
         $curlHandle = curl_init($url);
@@ -73,7 +78,7 @@ class PostUrl extends Post
         return strtolower(explode(";", $contenttype)[0]);
     }
 
-    private function checkIfWorkingUrl($url): bool
+    private function checkIfWorkingUrl(string $url): bool
     {
         // ein check auf Statuscode wäre auch gut
         $typetocheck = ['text/html'];

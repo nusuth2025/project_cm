@@ -1,0 +1,5 @@
+a:3:{s:4:"S_ID";s:17:"monitor1778525922";s:5:"S_URL";s:32:"https://www.uhrzeit.org/weltzeit";s:11:"S_SELECTION";s:149:"Uhrzeit.org Weltzeit 
+
+Die Weltzeit auf einen Blick
+
+Hier finden Sie eine Übersicht alle Zeitzonen der Erde und der wichtigsten Städte der Welt";}

@@ -6,14 +6,6 @@ class Post
     public string $formBox;
     protected string $defaultFormBox;
 
-    // private function __construct()
-    // {
-    //     // throw new \Exception('Not implemented');
-    // }
-    // private function __clone()
-    // {
-    //     // throw new \Exception('Not implemented');
-    // }
 
     protected function checkPost(string $check, string $defaultFormBox)
     {

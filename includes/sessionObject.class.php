@@ -25,15 +25,15 @@ class SessionObject
 
     public static function resetOrSaveSession()
     {
-        $postresetsave = $_POST; // nur für Testzwecke
+        // $postresetsave = $_POST; // nur für Testzwecke
 
         if (isset($_POST["reset_form"]) && $_POST["reset_form"] == "reset") {
             self::resetSession();
         } elseif (isset($_POST["save_data"]) && $_POST["save_data"] == "SAVE") {
-            $_SESSION["RESETSAVE"] = $_POST; // vielleicht unnötig
+            // $_SESSION["RESETSAVE"] = $_POST; // vielleicht unnötig
             self::saveSession();
         }
-        $_SESSION["RESETSAVE"] = $postresetsave; // nur für Testzwecke
+        // $_SESSION["RESETSAVE"] = $postresetsave; // nur für Testzwecke
 
     }
 

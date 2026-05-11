@@ -21,17 +21,18 @@
     <h1>Hi ich bin aus der index.html im contentMonitor...</h1>
 
     <div>
-        <div>
-            <?php echo $formResetOrSave ?>            
-        </div>
         <div>Eingabe Webadresse
             <?php echo $formUrl ?>
         </div>
         <div>Ausgabe Webadresse
-            <p style="background-color:antiquewhite;">This is the website you'd like to monitor: <?= $givenUrl->formAnswerUrl ?></p>
+            <p style="background-color:antiquewhite;">This is the website you'd like to monitor: <?= $formAnswerBlockData->trackedUrl ?></p>
+            <div>
+                <?php echo $formResetOrSave ?>
+            </div>
             <p>var_dump($_POST); :: <?php var_dump($_POST); ?></p>
             <p>var_dump($_SESSION); :: <?php var_dump($_SESSION); ?></p>
-            <p>var_dump($givenUrl)<?= var_dump($givenUrl) ?></p>
+            <p>var_dump($givenUrl)<?php var_dump($givenUrl) ?></p>
+            
 
         </div>
         <div><?php echo $formSelection ?>
@@ -42,8 +43,9 @@
         <div>Eingabe Copy Paste Text</div>
         <div>Ausgabe Html Copy Paste Text</div>
         <div>Ausgabe Text to monitor</div>
-        <!-- <div><?php //echo $formReset 
-                    ?></div> -->
+        <div><?php 
+        var_dump($formAnswerBlockData);
+                    ?></div>
     </div>
 </body>
 
