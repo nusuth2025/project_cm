@@ -7,7 +7,7 @@ class GivenUrl
     // public $formAnswerUrl;
     // public $testarray = [];
     //-------------------------------------
-    public $formBox; // sollte auf PostUrl->$defaultFormBox mappen
+    public String $formBox; // sollte auf PostUrl->$defaultFormBox mappen
     // public $checkedUrl; // oder so ähnlich mapped auf die Url oder ist das eh nur für $formAnswerUrl?
     public function __construct()
     {

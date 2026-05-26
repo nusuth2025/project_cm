@@ -10,6 +10,9 @@ $givenUrl = new GivenUrl();
 $formUrl = new UrlFormElement()->urlFormElement($givenUrl->formBox);
 $givenSelection = new GivenSelection();
 $formSelection = new SelectionFormElement()->selectionFormElement($givenSelection->formBox);
-$formAnswerBlockData = new FormAnswerBlockData(); //------
-$formAnswerBlockData->update($givenUrl,$givenSelection);
+// $formAnswerBlockData = new FormAnswerBlockData($givenUrl,$givenSelection); //------
+// $formAnswerBlockData->update($givenUrl,$givenSelection);
 // $test->update();
+if (!empty($givenSelection->postSelection->singleFalseWords)) {
+    $formSelection = new SelectionFormElement()->selectionFormElement($givenSelection->formBox, "", $givenSelection->postSelection->singleFalseWords[0]);
+}

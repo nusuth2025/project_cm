@@ -8,17 +8,17 @@ class SessionObject
         $_SESSION["S_ID"] = isset($_SESSION["S_ID"]) ? $_SESSION["S_ID"] : (string) "monitor" . time();
     }
 
-    public static function setSessionUrl($url)
+    public static function setSessionUrl(String $url)
     {
         $_SESSION["S_URL"] = isset($_SESSION["S_URL"]) ? $_SESSION["S_URL"] : $url;
     }
 
-    public static function setSessionSelection($selection)
+    public static function setSessionSelection(String $selection)
     {
         $_SESSION["S_SELECTION"] = isset($_SESSION["S_SELECTION"]) ? $_SESSION["S_SELECTION"] : $selection;
     }
 
-    public static function setSessionInnerSelection($innerSelection)
+    public static function setSessionInnerSelection(String $innerSelection)
     {
         $_SESSION["S_INNERSELECTION"] = isset($_SESSION["S_INNERSELECTION"]) ? $_SESSION["S_INNERSELECTION"] : $innerSelection;
     }

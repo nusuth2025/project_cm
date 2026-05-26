@@ -5,8 +5,9 @@ class Post
     protected string $postIn = ""; //ggf. gesetzte Url
     public string $formBox;
     protected string $defaultFormBox;
+    public static FormAnswerBlockData $formAnswerBlockData;
 
-
+// vielleicht noch ein getter für $formAnswerBlockData damit sie wieder protected sein kann
     protected function checkPost(string $check, string $defaultFormBox)
     {
         $this->getPost($check);
@@ -24,5 +25,17 @@ class Post
     protected function setFormBox(string $defaultFormBox)
     {
         $this->formBox = $this->postIn == "" | $this->postIn == $defaultFormBox ? $defaultFormBox : "successful!";
+    }
+
+    protected function setFormAnswerBlockData()
+    {
+        // $this->formAnswerBlockData = $formAnswerBlockData;
+        self::$formAnswerBlockData = new FormAnswerBlockData();
+        
+    }
+
+    protected function updateFormAnswerBlockData()
+    {
+        self::$formAnswerBlockData->update($this);
     }
 }

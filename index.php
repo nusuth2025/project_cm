@@ -25,7 +25,7 @@
             <?php echo $formUrl ?>
         </div>
         <div>Ausgabe Webadresse
-            <p style="background-color:antiquewhite;">This is the website you'd like to monitor: <?= $formAnswerBlockData->trackedUrl ?></p>
+            <p style="background-color:antiquewhite;">This is the website you'd like to monitor: <?= $givenUrl->postUrl::$formAnswerBlockData->trackedUrl ?></p>
             <div>
                 <?php echo $formResetOrSave ?>
             </div>
@@ -44,9 +44,9 @@
         <div>Ausgabe Html Copy Paste Text</div>
         <div>Ausgabe Text to monitor</div>
         <div><?php 
-        var_dump($formAnswerBlockData);
+        var_dump($givenUrl->postUrl::$formAnswerBlockData);
                     ?></div>
-    </div>
+    </div><?php var_dump($formSelection)?>
 </body>
 
 </html>
