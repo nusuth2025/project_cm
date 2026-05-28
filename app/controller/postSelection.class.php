@@ -47,7 +47,7 @@ class PostSelection extends Post
     private function checkIfWorkingSelection(String $selection)
     {
         $tmpName = $_SESSION["S_ID"] . "tmp";
-        $fp2 = file_get_contents(__DIR__ . "/../arrivals/" . $tmpName . ".txt");
+        $fp2 = file_get_contents(__DIR__ . "/../dump/" . $tmpName . ".txt");
         $tmp_arrstrpos = [];
         $tmp_truth_arr = [];
 
@@ -225,7 +225,7 @@ class PostSelection extends Post
         // Erzeugen des Namens der temporären Datei, wie das auch processSelection macht
         // und Schreiben des Inhalts in $markedTemp 
         $tmpName = $_SESSION["S_ID"] . "tmp";
-        $fp2 = file_get_contents(__DIR__ . "/../arrivals/" . $tmpName . ".txt");
+        $fp2 = file_get_contents(__DIR__ . "/../dump/" . $tmpName . ".txt");
         $markedTemp = $fp2;
 
         // Aufbau eines neuen Strings mit Markierungen, um die Worte aus dem arrstrpos[]-Positionsarray
@@ -240,7 +240,7 @@ class PostSelection extends Post
         }
         // Erzeugen einer ...tmp_Check.txt in die der markierte String geschrieben wird
         $tmpName = $_SESSION["S_ID"] . "tmp_Check";
-        $ft = fopen(__DIR__ . "/../arrivals/" . $tmpName . ".txt", "w");
+        $ft = fopen(__DIR__ . "/../dump/" . $tmpName . ".txt", "w");
         fwrite($ft, serialize($markedTemp2));
         fclose($ft);
     }

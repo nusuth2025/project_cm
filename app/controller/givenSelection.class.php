@@ -4,8 +4,8 @@ class GivenSelection
 {
     public PostSelection $postSelection;
     // public ProcessSelection $processSelection;
-    public $formAnswerSelection;
-    public $formBox;
+    public String $formAnswerSelection;
+    public String $formBox;
 
     public function __construct()
     {

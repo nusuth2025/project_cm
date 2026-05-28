@@ -1,7 +1,7 @@
 <?php
 class UrlFormElement{
-    public $urlFormElement;
-    public function urlFormElement($formBox){
+    public String $urlFormElement;
+    public function urlFormElement(String $formBox){
         $s = $_SERVER["PHP_SELF"];
         $this->urlFormElement = 
         '<form action="'. $s.'" method="post">

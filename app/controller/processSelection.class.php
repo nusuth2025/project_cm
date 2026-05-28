@@ -13,7 +13,7 @@ public function __construct()
     {
         // $url = $_SESSION['S_URL'];
         $tmpName = $_SESSION["S_ID"] . "tmp";
-        $fp = fopen(__DIR__ . "/../arrivals/" . $tmpName . ".txt", "w");
+        $fp = fopen(__DIR__ . "/../dump/" . $tmpName . ".txt", "w");
 
         // auslesen der url -------------------------
         $curl = curl_init();

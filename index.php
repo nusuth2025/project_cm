@@ -10,7 +10,7 @@
         type="image/svg+xml"
         href="img/light-bulb-idea-svgrepo-com-green.svg" />
     <?php
-    include_once 'includes/init.inc.php';
+    include_once __DIR__.'/app/init.php';
 
     // define
 

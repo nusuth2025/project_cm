@@ -4,7 +4,8 @@ class ResetOrSaveFormElement
     public String $resetOrSaveFormElement;
     public function resetOrSaveFormElement()
     {
-        $s = "includes/sessionResetOrSave.php";
+        $s = "/../../app/model/sessionResetOrSave.php";
+        var_dump($s);
         $this->resetOrSaveFormElement =
             '<form action="' . $s . '" method="post">
                 <label for="reset_form">if you\'d like to reset the form without saving click the button </label>

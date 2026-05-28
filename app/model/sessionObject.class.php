@@ -46,7 +46,7 @@ class SessionObject
     public static function saveSession()
     {
         if (isset($_SESSION["S_ID"])) {
-            $f = fopen("../arrivals/" . $_SESSION["S_ID"] . ".txt", "wa");
+            $f = fopen(__DIR__."/../dump/" . $_SESSION["S_ID"] . ".txt", "wa");
 
             fwrite($f, serialize($_SESSION));
             fclose($f);
