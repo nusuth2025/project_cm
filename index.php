@@ -1,52 +1,8 @@
-<!DOCTYPE html>
-<html lang="de">
+<?php
+declare(strict_types=1);
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>contentMonitor</title>
-    <link
-        rel="icon"
-        type="image/svg+xml"
-        href="img/light-bulb-idea-svgrepo-com-green.svg" />
-    <?php
-    include_once __DIR__.'/app/init.php';
+require_once __DIR__ . '/app/config.php';
 
-    // define
+session_start();
 
-    ?>
-</head>
-
-<body>
-    <h1>Hi ich bin aus der index.html im contentMonitor...</h1>
-
-    <div>
-        <div>Eingabe Webadresse
-            <?php echo $formUrl ?>
-        </div>
-        <div>Ausgabe Webadresse
-            <p style="background-color:antiquewhite;">This is the website you'd like to monitor: <?= $givenUrl->postUrl::$formAnswerBlockData->trackedUrl ?></p>
-            <div>
-                <?php echo $formResetOrSave ?>
-            </div>
-            <p>var_dump($_POST); :: <?php var_dump($_POST); ?></p>
-            <p>var_dump($_SESSION); :: <?php var_dump($_SESSION); ?></p>
-            <p>var_dump($givenUrl)<?php var_dump($givenUrl) ?></p>
-            
-
-        </div>
-        <div><?php echo $formSelection ?>
-            <p>var_dump($givenUrl->postUrl->urlState):: <?= var_dump($givenUrl->postUrl->urlState) ?></p>
-        </div>
-    </div>
-    <div>
-        <div>Eingabe Copy Paste Text</div>
-        <div>Ausgabe Html Copy Paste Text</div>
-        <div>Ausgabe Text to monitor</div>
-        <div><?php 
-        var_dump($givenUrl->postUrl::$formAnswerBlockData);
-                    ?></div>
-    </div><?php var_dump($formSelection)?>
-</body>
-
-</html>
+require_once __DIR__ . '/app/router.php';
