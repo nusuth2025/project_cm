@@ -10,6 +10,7 @@ use App\Controller\MonitorAddController;
 use App\Controller\MonitorViewController;
 use App\Controller\MonitorEditController;
 use App\Controller\MonitorDeleteController;
+use App\Controller\MonitorDebugController;
 
 $session = new SessionService();
 $session->ensureSessionId();
@@ -24,7 +25,8 @@ $routes = [
     ['GET|POST', '/',                    HomeController::class],
     ['GET',      '/list',                MonitorListController::class],
     ['GET|POST', '/add',                 MonitorAddController::class],
-    ['GET',      '#^/monitor/(\d+)$#',   MonitorViewController::class],
+    ['GET',      '#^/monitor/(\d+)/quelle$#', MonitorDebugController::class],
+    ['GET',      '#^/monitor/(\d+)$#',        MonitorViewController::class],
     ['GET|POST', '#^/edit/(\d+)$#',      MonitorEditController::class],
     ['POST',     '#^/delete/(\d+)$#',    MonitorDeleteController::class],
     ['GET|POST', '/login',               LoginController::class],
