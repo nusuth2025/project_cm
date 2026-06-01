@@ -25,6 +25,7 @@
                     <th class="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Status</th>
                     <th class="text-left px-4 py-3 font-medium text-gray-600 hidden lg:table-cell">Letzte Prüfung</th>
                     <th class="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Prüfungen</th>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">Intervall</th>
                     <th class="px-4 py-3"></th>
                 </tr>
             </thead>
@@ -40,6 +41,17 @@
                                 <?= htmlspecialchars($page['url']) ?>
                             </div>
                         <?php endif; ?>
+                        <?php if (!empty($page['inner_selection_text'])): ?>
+                            <div class="mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200
+                                        rounded px-2 py-0.5 inline-block max-w-xs truncate"
+                                 title="Feinauswahl: <?= htmlspecialchars($page['inner_selection_text']) ?>">
+                                <?= htmlspecialchars(
+                                    mb_strlen($page['inner_selection_text']) > 32
+                                        ? mb_substr($page['inner_selection_text'], 0, 32) . '…'
+                                        : $page['inner_selection_text']
+                                ) ?>
+                            </div>
+                        <?php endif; ?>
                     </td>
                     <td class="px-4 py-3 hidden md:table-cell">
                         <?php
@@ -52,7 +64,7 @@
                         $statusLabels = ['active' => 'Aktiv', 'paused' => 'Pausiert', 'error' => 'Fehler'];
                         ?>
                         <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium <?= $statusClasses ?>">
-                            <?= $statusLabels[$page['status']] ?? $page['status'] ?>
+                            <?= htmlspecialchars($statusLabels[$page['status']] ?? $page['status']) ?>
                         </span>
                         <?php if ($page['last_changed']): ?>
                             <span class="inline-flex ml-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
@@ -65,6 +77,16 @@
                     </td>
                     <td class="px-4 py-3 text-gray-500 hidden sm:table-cell">
                         <?= (int)$page['dump_count'] ?>
+                    </td>
+                    <td class="px-4 py-3 text-gray-500 hidden xl:table-cell text-xs">
+                        <?php
+                        $im = (int)($page['check_interval_minutes'] ?? 1440);
+                        $parts = [];
+                        if ($d = intdiv($im, 1440))       $parts[] = $d . 'T';
+                        if ($h = intdiv($im % 1440, 60))  $parts[] = $h . 'h';
+                        if ($m = $im % 60)                $parts[] = $m . 'min';
+                        echo $parts ? implode('&nbsp;', $parts) : '1min';
+                        ?>
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2 justify-end">

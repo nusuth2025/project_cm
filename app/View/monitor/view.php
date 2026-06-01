@@ -11,6 +11,14 @@
         <?php endif; ?>
     </div>
     <div class="flex items-center gap-2 shrink-0">
+        <?php if ($page['selection_text'] !== null): ?>
+        <a href="/monitor/<?= (int)$page['id'] ?>/quelle" target="_blank"
+           class="text-sm border border-amber-300 text-amber-700 px-3 py-1.5 rounded-lg
+                  hover:bg-amber-50 hover:border-amber-400 transition-colors"
+           title="Quelltext der aktuellen Seite mit markierten Fundstellen anzeigen">
+            🔍 Quelltext prüfen
+        </a>
+        <?php endif; ?>
         <a href="/edit/<?= (int)$page['id'] ?>"
            class="text-sm border border-gray-300 px-3 py-1.5 rounded-lg hover:border-gray-400 transition-colors">
             Bearbeiten
@@ -25,7 +33,7 @@
         $statusLabels = ['active' => 'Aktiv', 'paused' => 'Pausiert', 'error' => 'Fehler'];
         ?>
         <span class="px-3 py-1.5 rounded-lg text-sm font-medium <?= $statusClasses ?>">
-            <?= $statusLabels[$page['status']] ?? $page['status'] ?>
+            <?= htmlspecialchars($statusLabels[$page['status']] ?? $page['status']) ?>
         </span>
     </div>
 </div>
@@ -43,10 +51,65 @@
         <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Angelegt am</div>
         <div><?= htmlspecialchars(substr($page['created_at'], 0, 16)) ?></div>
     </div>
+    <div>
+        <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Prüfintervall</div>
+        <div>
+            <?php
+            $im = (int)($page['check_interval_minutes'] ?? 1440);
+            $parts = [];
+            if ($d = intdiv($im, 1440))       $parts[] = $d . ' Tag'   . ($d !== 1 ? 'e' : '');
+            if ($h = intdiv($im % 1440, 60))  $parts[] = $h . ' Std.';
+            if ($m = $im % 60)                $parts[] = $m . ' Min.';
+            echo htmlspecialchars($parts ? implode(' ', $parts) : '1 Min.');
+            ?>
+        </div>
+    </div>
+    <div>
+        <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Startzeit (Erstlauf)</div>
+        <div><?= sprintf('%02d:00 Uhr', (int)($page['start_hour'] ?? 8)) ?></div>
+    </div>
+    <?php if (!empty($page['inner_selection_text'])): ?>
+    <div class="sm:col-span-2">
+        <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Feinauswahl</div>
+        <div class="flex flex-wrap gap-1.5">
+            <?php foreach (preg_split('/\s+/', trim($page['inner_selection_text']), -1, PREG_SPLIT_NO_EMPTY) as $w): ?>
+                <span class="inline-block bg-amber-100 text-amber-900 border border-amber-300
+                             text-sm font-semibold px-2.5 py-0.5 rounded-full">
+                    <?= htmlspecialchars($w) ?>
+                </span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php if ($page['selection_text'] !== null): ?>
     <div class="sm:col-span-2">
         <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Überwachter Textausschnitt</div>
-        <pre class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs overflow-auto max-h-32 whitespace-pre-wrap"><?= htmlspecialchars($page['selection_text']) ?></pre>
+        <?php
+        $outerText = $page['selection_text'];
+        $innerText = $page['inner_selection_text'] ?? '';
+
+        if ($innerText !== '') {
+            // Feinauswahl-Wörter im Außenbereich hervorheben
+            $innerWords = preg_split('/\s+/', trim($innerText), -1, PREG_SPLIT_NO_EMPTY);
+            $patterns   = array_map(fn($w) => preg_quote($w, '/'), $innerWords);
+            $regex      = '/(' . implode('|', $patterns) . ')/';
+            $parts      = preg_split($regex, $outerText, -1, PREG_SPLIT_DELIM_CAPTURE);
+            $rendered   = '';
+            foreach ($parts as $i => $part) {
+                $rendered .= ($i % 2 === 1)
+                    ? '<mark class="bg-amber-200 text-amber-900 rounded px-0.5 font-bold not-italic">'
+                      . htmlspecialchars($part) . '</mark>'
+                    : htmlspecialchars($part);
+            }
+        } else {
+            $rendered = htmlspecialchars($outerText);
+        }
+        ?>
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs overflow-auto max-h-48
+                    whitespace-pre-wrap font-mono leading-relaxed">
+            <?= $rendered ?>
+        </div>
     </div>
     <?php endif; ?>
 </div>

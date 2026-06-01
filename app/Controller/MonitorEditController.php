@@ -31,16 +31,28 @@ class MonitorEditController extends AbstractController
         $errors = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $label  = htmlspecialchars(trim($_POST['label'] ?? ''));
-            $status = $_POST['status'] ?? '';
+            $label   = trim($_POST['label'] ?? '');
+            $status  = $_POST['status'] ?? '';
+
+            $days         = max(0, (int) ($_POST['interval_days']    ?? 0));
+            $hours        = max(0, min(23, (int) ($_POST['interval_hours']   ?? 0)));
+            $mins         = max(0, min(59, (int) ($_POST['interval_minutes'] ?? 0)));
+            $totalMinutes = $days * 1440 + $hours * 60 + $mins;
+            $startHour    = max(0, min(23, (int) ($_POST['start_hour'] ?? 8)));
 
             if (!in_array($status, ['active', 'paused'], true)) {
                 $errors[] = 'Ungültiger Status.';
             }
+            if ($totalMinutes < 15) {
+                $errors[] = 'Das Prüfintervall muss mindestens 15 Minuten betragen.';
+            }
 
             if (empty($errors)) {
-                $db->prepare('UPDATE monitored_pages SET label = ?, status = ? WHERE id = ?')
-                   ->execute([$label !== '' ? $label : null, $status, $this->pageId]);
+                $db->prepare(
+                    'UPDATE monitored_pages
+                     SET label = ?, status = ?, check_interval_minutes = ?, start_hour = ?
+                     WHERE id = ?'
+                )->execute([$label !== '' ? $label : null, $status, $totalMinutes, $startHour, $this->pageId]);
                 $this->redirect('/monitor/' . $this->pageId);
             }
         }

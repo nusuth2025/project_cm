@@ -47,6 +47,12 @@ class SessionService
         return $_SESSION['S_INNERSELECTION'] ?? null;
     }
 
+    /** Nur Feinauswahl zurücksetzen, ohne den restlichen Monitor-Flow zu berühren. */
+    public function clearInnerSelection(): void
+    {
+        unset($_SESSION['S_INNERSELECTION']);
+    }
+
     public function setUserId(int $id): void
     {
         $_SESSION['user_id'] = $id;
@@ -81,6 +87,6 @@ class SessionService
      */
     public function reset(): void
     {
-        session_unset();
+        $_SESSION = [];
     }
 }

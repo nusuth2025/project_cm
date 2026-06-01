@@ -43,6 +43,62 @@
             </select>
         </div>
 
+        <?php
+            $im     = (int)($page['check_interval_minutes'] ?? 1440);
+            $iDays  = intdiv($im, 1440);
+            $iHours = intdiv($im % 1440, 60);
+            $iMins  = $im % 60;
+            $iStart = (int)($page['start_hour'] ?? 8);
+        ?>
+
+        <div>
+            <label for="start_hour" class="block text-sm font-medium text-gray-700 mb-1">
+                Erste Prüfung um
+            </label>
+            <select name="start_hour" id="start_hour"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm
+                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <?php for ($h = 0; $h < 24; $h++): ?>
+                    <option value="<?= $h ?>" <?= $h === $iStart ? 'selected' : '' ?>>
+                        <?= sprintf('%02d:00 Uhr', $h) ?>
+                    </option>
+                <?php endfor; ?>
+            </select>
+            <p class="mt-1 text-xs text-gray-400">
+                Gilt nur für den nächsten anstehenden Erstersrtlauf (falls noch kein Dump vorhanden).
+            </p>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Prüfintervall</label>
+            <div class="flex gap-3 flex-wrap">
+                <div>
+                    <input type="number" name="interval_days" min="0" max="365"
+                           value="<?= $iDays ?>"
+                           class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center
+                                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <div class="mt-1 text-xs text-center text-gray-400">Tage</div>
+                </div>
+                <div>
+                    <input type="number" name="interval_hours" min="0" max="23"
+                           value="<?= $iHours ?>"
+                           class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center
+                                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <div class="mt-1 text-xs text-center text-gray-400">Stunden</div>
+                </div>
+                <div>
+                    <input type="number" name="interval_minutes" min="0" max="59"
+                           value="<?= $iMins ?>"
+                           class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center
+                                  focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <div class="mt-1 text-xs text-center text-gray-400">Minuten</div>
+                </div>
+            </div>
+            <p class="mt-2 text-xs text-gray-400">
+                Mindestens 15&nbsp;Minuten. Folgeprüfungen laufen in diesem Abstand nach dem ersten Lauf.
+            </p>
+        </div>
+
         <div class="flex items-center gap-3 pt-2">
             <button type="submit"
                     class="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium

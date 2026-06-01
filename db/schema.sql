@@ -35,8 +35,12 @@ CREATE TABLE IF NOT EXISTS monitored_pages (
     selection_text       TEXT          NULL COMMENT 'Der zu überwachende Textausschnitt',
     inner_selection_text TEXT          NULL COMMENT 'Innerer Ausschnitt (Kerntext)',
     label                VARCHAR(255)  NULL     COMMENT 'Optionaler Anzeigename',
-    status               ENUM('active','paused','error') NOT NULL DEFAULT 'active',
-    created_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status                ENUM('active','paused','error') NOT NULL DEFAULT 'active',
+    check_interval_minutes INT UNSIGNED  NOT NULL DEFAULT 1440
+                                        COMMENT 'Prüfintervall in Minuten (1440 = 1 Tag, 60 = 1 Stunde)',
+    start_hour             TINYINT UNSIGNED NOT NULL DEFAULT 8
+                                        COMMENT 'Startstunde des ersten Prüflaufs (0–23)',
+    created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
                                        ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (id),

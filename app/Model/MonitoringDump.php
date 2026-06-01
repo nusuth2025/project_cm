@@ -12,6 +12,11 @@ class MonitoringDump
     public \DateTimeImmutable $foundAt;
     public bool $changed;
 
+    // Nur im Arbeitsspeicher — nicht in der DB gespeichert.
+    // Werden von MonitoringService::runCheck() gesetzt und von NotificationService genutzt.
+    public string $changeNote             = '';  // Menschenlesbare Erklärung der Änderung
+    public ?string $previousCheckedContent = null; // Alter Wert für den "vorher/nachher"-Vergleich
+
     public static function fromRow(array $row): self
     {
         $dump = new self();
