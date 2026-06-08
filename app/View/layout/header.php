@@ -29,11 +29,14 @@
         <div class="flex items-center gap-5 text-sm">
             <a href="/"     class="text-gray-600 hover:text-gray-900 transition-colors">Home</a>
             <a href="/list" class="text-gray-600 hover:text-gray-900 transition-colors">Meine Monitore</a>
-            <a href="/add"  class="text-gray-600 hover:text-gray-900 transition-colors">Hinzufügen</a>
+            <a href="/add"  class="text-gray-600 hover:text-gray-900 transition-colors">Monitor hinzufügen</a>
         </div>
         <div class="ml-auto flex items-center gap-3 text-sm">
             <?php if (isset($_SESSION['user_id'])): ?>
-                <span class="text-gray-500"><?= htmlspecialchars((string)($_SESSION['username'] ?? '')) ?></span>
+                <a href="/settings"
+                   class="text-gray-500 hover:text-gray-800 transition-colors">
+                    <?= htmlspecialchars((string)($_SESSION['username'] ?? '')) ?>
+                </a>
                 <form method="post" action="/logout" class="inline">
                     <button type="submit"
                             class="text-red-600 hover:text-red-800 transition-colors font-medium">

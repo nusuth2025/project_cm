@@ -4,7 +4,7 @@
     <h1 class="text-2xl font-bold text-gray-900">Meine Monitore</h1>
     <a href="/add"
        class="bg-green-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium">
-        + Hinzufügen
+        + Monitor hinzufügen
     </a>
 </div>
 
