@@ -1,0 +1,452 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+
+  <!-- ============================================================ -->
+  <!-- MODELS                                                        -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>10</y><w>230</w><h>120</h></coordinates>
+    <panel_attributes>User
+--
++id: int
++username: string
++email: string
++passwordHash: string
++createdAt: DateTimeImmutable
+--
++fromRow(row): self</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>160</y><w>240</w><h>220</h></coordinates>
+    <panel_attributes>MonitoredPage
+--
++id: int
++userId: int
++url: string
++selectionText: ?string
++innerSelectionText: ?string
++label: ?string
++status: string
++checkIntervalMinutes: int
++startHour: int
++lastCheckedAt: ?DateTime
++checkCount: int
++createdAt: DateTimeImmutable
++updatedAt: DateTimeImmutable
+--
++fromRow(row): self</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>410</y><w>240</w><h>170</h></coordinates>
+    <panel_attributes>MonitoringDump
+--
++id: int
++monitoredPageId: int
++htmlContent: string
++checkedContent: ?string
++foundAt: DateTimeImmutable
++changed: bool
++changeNote: string
++previousCheckedContent: ?string
+--
++fromRow(row): self</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>610</y><w>200</w><h>80</h></coordinates>
+    <panel_attributes>DB
+&lt;&lt;Singleton&gt;&gt;
+--
+-instance: ?PDO
+--
++getInstance(): PDO</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- SERVICES                                                       -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>290</x><y>10</y><w>240</w><h>230</h></coordinates>
+    <panel_attributes>SessionService
+--
+--
++ensureSessionId(): void
++getSessionId(): ?string
++setUrl(url): void
++getUrl(): ?string
++setSelection(sel): void
++getSelection(): ?string
++setInnerSelection(s): void
++getInnerSelection(): ?string
++setUserId(id): void
++getUserId(): ?int
++isLoggedIn(): bool
++clearMonitorFlow(): void
++reset(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>290</x><y>270</y><w>240</w><h>70</h></coordinates>
+    <panel_attributes>UrlCheckService
+--
+--
++check(url): UrlCheckResult</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>290</x><y>370</y><w>240</w><h>110</h></coordinates>
+    <panel_attributes>UrlCheckResult
+&lt;&lt;final&gt;&gt;
+--
++isUsable: bool
++statusCode: int
++effectiveUrl: string
++message: string
++severity: string
+--
++wasRedirected(url): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>290</x><y>510</y><w>240</w><h>110</h></coordinates>
+    <panel_attributes>SelectionSearchService
+--
+--
++tokenize(selection): array
++findPositions(html, sel): array
++findMissingWord(html, sel): ?array
++buildHighlightedHtml(...): string</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>290</x><y>650</y><w>240</w><h>110</h></coordinates>
+    <panel_attributes>MonitoringService
+--
+--
++fetchHtml(url): string
++runCheck(page): MonitoringDump
++getPreviousDump(id): ?MonitoringDump
++hasChanged(prev, curr): bool</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>290</x><y>790</y><w>240</w><h>70</h></coordinates>
+    <panel_attributes>NotificationService
+--
+--
++sendChangedNotifications(changes): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- CONTROLLERS                                                    -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>580</x><y>10</y><w>260</w><h>130</h></coordinates>
+    <panel_attributes>&lt;&lt;abstract&gt;&gt;
+AbstractController
+--
+#session: SessionService
+--
++handle(): void
+#render(view, data): void
+#redirect(url): never
+#requireLogin(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>580</x><y>180</y><w>190</w><h>80</h></coordinates>
+    <panel_attributes>&lt;&lt;enumeration&gt;&gt;
+UrlState
+--
+NotSet
+Valid
+NotWorking</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>580</x><y>290</y><w>190</w><h>80</h></coordinates>
+    <panel_attributes>&lt;&lt;enumeration&gt;&gt;
+PostState
+--
+NotSet
+Valid
+Problem</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>10</y><w>210</w><h>60</h></coordinates>
+    <panel_attributes>HomeController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>100</y><w>210</w><h>60</h></coordinates>
+    <panel_attributes>LoginController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>190</y><w>210</w><h>60</h></coordinates>
+    <panel_attributes>LogoutController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>280</y><w>220</w><h>60</h></coordinates>
+    <panel_attributes>MonitorAddController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>370</y><w>220</w><h>60</h></coordinates>
+    <panel_attributes>MonitorEditController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>460</y><w>220</w><h>60</h></coordinates>
+    <panel_attributes>MonitorListController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>550</y><w>220</w><h>60</h></coordinates>
+    <panel_attributes>MonitorViewController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>640</y><w>220</w><h>60</h></coordinates>
+    <panel_attributes>MonitorDeleteController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>730</y><w>230</w><h>60</h></coordinates>
+    <panel_attributes>MonitorDumpDeleteController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>820</y><w>210</w><h>60</h></coordinates>
+    <panel_attributes>MonitorDebugController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>890</x><y>910</y><w>220</w><h>60</h></coordinates>
+    <panel_attributes>UserSettingsController
+--
+--
++handle(): void</panel_attributes>
+    <additional_attributes/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- RELATIONS                                                      -->
+  <!-- ============================================================ -->
+
+  <!-- AbstractController right edge center: (840, 75) -->
+
+  <!-- HomeController (cy=40) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>40</y><w>50</w><h>40</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;0;0;35</additional_attributes>
+  </element>
+
+  <!-- LoginController (cy=130) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>55</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;55;0;0</additional_attributes>
+  </element>
+
+  <!-- LogoutController (cy=220) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>145</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;145;0;0</additional_attributes>
+  </element>
+
+  <!-- MonitorAddController (cy=310) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>235</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;235;0;0</additional_attributes>
+  </element>
+
+  <!-- MonitorEditController (cy=400) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>325</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;325;0;0</additional_attributes>
+  </element>
+
+  <!-- MonitorListController (cy=490) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>415</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;415;0;0</additional_attributes>
+  </element>
+
+  <!-- MonitorViewController (cy=580) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>505</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;505;0;0</additional_attributes>
+  </element>
+
+  <!-- MonitorDeleteController (cy=670) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>595</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;595;0;0</additional_attributes>
+  </element>
+
+  <!-- MonitorDumpDeleteController (cy=760) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>685</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;685;0;0</additional_attributes>
+  </element>
+
+  <!-- MonitorDebugController (cy=850) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>775</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;775;0;0</additional_attributes>
+  </element>
+
+  <!-- UserSettingsController (cy=940) → AbstractController (cy=75) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>840</x><y>75</y><w>50</w><h>865</h></coordinates>
+    <panel_attributes>lt=&lt;&lt;-</panel_attributes>
+    <additional_attributes>50;865;0;0</additional_attributes>
+  </element>
+
+  <!-- AbstractController uses SessionService -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>530</x><y>75</y><w>50</w><h>50</h></coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>50;0;0;50</additional_attributes>
+  </element>
+
+  <!-- MonitoringService uses SelectionSearchService -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>400</x><y>620</y><w>20</w><h>30</h></coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>10;30;10;0</additional_attributes>
+  </element>
+
+  <!-- UrlCheckService returns UrlCheckResult -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>400</x><y>340</y><w>20</w><h>30</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>10;0;10;30</additional_attributes>
+  </element>
+
+  <!-- MonitoringService uses MonitoringDump -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>250</x><y>495</y><w>40</w><h>160</h></coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>40;160;0;0</additional_attributes>
+  </element>
+
+  <!-- NotificationService uses MonitoringDump -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>250</x><y>495</y><w>40</w><h>300</h></coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>40;300;0;0</additional_attributes>
+  </element>
+
+</diagram>

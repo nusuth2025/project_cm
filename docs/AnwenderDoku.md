@@ -1,6 +1,6 @@
 # Anwenderdokumentation — ContentMonitor
 
-**Version:** 1.0 | **Datum:** Mai 2026
+**Version:** 1.1 | **Datum:** Juni 2026
 **Anwendung:** ContentMonitor — Änderungsüberwachung für HTML-Webseiten
 
 ---
@@ -11,15 +11,17 @@
 2. [Systemvoraussetzungen](#2-systemvoraussetzungen)
 3. [Installation und Einrichtung](#3-installation-und-einrichtung)
 4. [Erste Schritte — Anmelden](#4-erste-schritte--anmelden)
-5. [Monitor anlegen](#5-monitor-anlegen)
-6. [Monitor-Übersicht](#6-monitor-übersicht)
-7. [Monitor anzeigen und Verlauf einsehen](#7-monitor-anzeigen-und-verlauf-einsehen)
-8. [Monitor bearbeiten](#8-monitor-bearbeiten)
-9. [Monitor löschen](#9-monitor-löschen)
-10. [Automatisches Monitoring einrichten (Cron)](#10-automatisches-monitoring-einrichten-cron)
-11. [Monitoring manuell starten (CLI)](#11-monitoring-manuell-starten-cli)
-12. [Häufige Probleme und Lösungen](#12-häufige-probleme-und-lösungen)
-13. [Administrationshinweise](#13-administrationshinweise)
+5. [Kontoeinstellungen](#5-kontoeinstellungen)
+6. [Monitor anlegen](#6-monitor-anlegen)
+7. [Monitor-Übersicht](#7-monitor-übersicht)
+8. [Monitor anzeigen und Verlauf einsehen](#8-monitor-anzeigen-und-verlauf-einsehen)
+9. [Quelltext-Ansicht](#9-quelltext-ansicht)
+10. [Monitor bearbeiten](#10-monitor-bearbeiten)
+11. [Monitor löschen](#11-monitor-löschen)
+12. [Automatisches Monitoring einrichten (Cron)](#12-automatisches-monitoring-einrichten-cron)
+13. [Monitoring manuell starten (CLI)](#13-monitoring-manuell-starten-cli)
+14. [Häufige Probleme und Lösungen](#14-häufige-probleme-und-lösungen)
+15. [Administrationshinweise](#15-administrationshinweise)
 
 ---
 
@@ -35,10 +37,10 @@ Sobald eine Änderung erkannt wird, erhalten Sie eine E-Mail-Benachrichtigung.
       │
       ▼
 2. Monitor anlegen
-   (URL eingeben → Text von der Seite kopieren → speichern)
+   (URL → Textauswahl → Feinauswahl → Intervall → speichern)
       │
       ▼
-3. Cron-Job läuft automatisch täglich
+3. Cron-Job läuft automatisch im eingestellten Intervall
    (prüft Seite, speichert Ergebnis, sendet Mail bei Änderung)
       │
       ▼
@@ -72,7 +74,6 @@ Sobald eine Änderung erkannt wird, erhalten Sie eine E-Mail-Benachrichtigung.
 ### Schritt 1 — Datenbank anlegen
 
 ```bash
-# Als root oder mit ausreichenden Rechten:
 sudo mariadb < db/schema.sql
 ```
 
@@ -104,11 +105,9 @@ VALUES ('nutzername', 'mail@beispiel.de', '$2y$12$...');
 In `app/config.php` folgende Werte anpassen:
 
 ```php
-define('APP_ENV', 'prod');   // 'dev' für Entwicklung, 'prod' für Betrieb
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'contentmonitor');
-define('DB_USER', 'contentmonitor');
-define('DB_PASS', 'changeme');         // Bitte ändern!
+define('APP_ENV',  'prod');            // 'dev' für Entwicklung, 'prod' für Betrieb
+define('APP_URL',  'http://localhost'); // Öffentliche URL der Anwendung
+define('DB_PASS',  'changeme');        // Bitte ändern!
 ```
 
 ### Schritt 5 — Apache konfigurieren
@@ -141,68 +140,73 @@ Folgende Zeile einfügen (stündlich — empfohlen):
 0 * * * * /usr/bin/php /pfad/zum/project_contentmonitor/app/Cli/monitor.php --all >> /pfad/zum/project_contentmonitor/app/monitor.log 2>&1
 ```
 
-Für kürzere Intervalle (z. B. wenn Prüfintervalle unter einer Stunde konfiguriert sind):
+Für Prüfintervalle unter einer Stunde (z. B. alle 15 Minuten):
 
 ```
 */15 * * * * /usr/bin/php /pfad/zum/project_contentmonitor/app/Cli/monitor.php --all >> /pfad/zum/project_contentmonitor/app/monitor.log 2>&1
 ```
 
 > Das Script prüft bei jedem Aufruf selbst, welche Monitore fällig sind —
-> es ist also unschädlich, es häufiger laufen zu lassen als nötig.
+> es ist unschädlich, es häufiger laufen zu lassen als nötig.
 
 ---
 
 ## 4. Erste Schritte — Anmelden
 
 1. Browser öffnen und die Adresse des ContentMonitor aufrufen
-   (z. B. `http://project_contentmonitor.local`)
 2. Auf der Startseite auf **Anmelden** klicken oder direkt `/login` aufrufen
 3. Benutzernamen und Passwort eingeben
 4. **Anmelden** klicken
 
-Nach erfolgreicher Anmeldung erscheint die Navigationsleiste mit Ihrem Benutzernamen
-und dem Button **Abmelden**.
+Nach erfolgreicher Anmeldung erscheint die Navigationsleiste. Der angezeigte
+**Benutzername** ist ein Link zu den Kontoeinstellungen.
 
 > **Hinweis:** Zugangsdaten werden vom Administrator angelegt.
 > Eine Selbstregistrierung ist nicht möglich.
 
 ---
 
-## 5. Monitor anlegen
+## 5. Kontoeinstellungen
+
+Klicken Sie in der Navigationsleiste auf Ihren **Benutzernamen** oder rufen Sie
+`/settings` auf.
+
+### E-Mail-Adresse ändern
+
+1. Neue E-Mail-Adresse eingeben
+2. Aktuelles Passwort zur Bestätigung eingeben
+3. **E-Mail aktualisieren** klicken
+
+### Passwort ändern
+
+1. Aktuelles Passwort eingeben
+2. Neues Passwort eingeben (mindestens 8 Zeichen)
+3. Neues Passwort wiederholen
+4. **Passwort ändern** klicken
+
+---
+
+## 6. Monitor anlegen
 
 Ein Monitor besteht aus einer URL und einem Textausschnitt, der auf dieser Seite
-überwacht werden soll.
+überwacht werden soll. Das Anlegen erfolgt in vier Schritten.
 
-### Schritt 1 — Seite aufrufen
+Klicken Sie in der Navigation auf **Hinzufügen**.
 
-Klicken Sie in der Navigation auf **Hinzufügen** oder auf der Startseite auf
-**Monitor hinzufügen**.
-
-### Schritt 2 — URL eingeben
-
-```
-┌─────────────────────────────────────────┐
-│ URL                                      │
-│ ┌─────────────────────────────────────┐ │
-│ │ https://example.com                 │ │
-│ └─────────────────────────────────────┘ │
-│  [URL prüfen]  [✕ Leeren]               │
-└─────────────────────────────────────────┘
-```
+### Schritt 1 — URL eingeben
 
 1. Die Webadresse der zu überwachenden Seite eingeben
    (vollständig mit `https://`, z. B. `https://www.heise.de`)
 2. **URL prüfen** klicken
 3. Bei Erfolg erscheint **✓ Erreichbar** und Schritt 2 wird eingeblendet
 
-> **Mögliche Fehlermeldung:** „Diese Adresse ist nicht erreichbar oder liefert keinen
-> HTML-Inhalt." → Prüfen Sie ob die URL erreichbar ist und mit `http://` oder `https://`
-> beginnt.
+> **Fehlermeldung:** „Diese Adresse ist nicht erreichbar" → Prüfen Sie ob die URL
+> im Browser aufrufbar ist und HTML-Inhalt liefert.
 
-### Schritt 3 — Textauswahl treffen
+### Schritt 2 — Textauswahl treffen
 
-Nach erfolgreicher URL-Prüfung erscheint ein grüner Infostreifen mit der URL und
-dem Button **Diese Seite öffnen**.
+Auf der linken Seite erscheint ein grüner Hinweisblock mit Tipps zur Textauswahl.
+Lesen Sie diesen vor dem ersten Anlegen eines Monitors.
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -211,116 +215,166 @@ dem Button **Diese Seite öffnen**.
 ```
 
 1. Klicken Sie auf **Diese Seite öffnen** — die Seite öffnet sich in einem neuen Tab
-2. Auf der Webseite den zu überwachenden Text markieren und **kopieren** (Strg+C)
-3. Dabei etwas Kontext (die umgebenden Sätze oder Zeilen) mit kopieren —
-   dies erhöht die Treffsicherheit der Suche
-
-   **Beispiel:**
-   ```
-   Kopieren Sie nicht nur:
-   "Neue Veranstaltung"
-
-   Sondern auch den Kontext darum:
-   "Veranstaltungen im März
-   Neue Veranstaltung am 15. März
-   Ort: Werkstatt"
-   ```
-
-4. In das Textfeld **Auswahltext** wechseln und einfügen (Strg+V)
+2. Markieren und kopieren Sie auf der Webseite einen Textbereich, **innerhalb dessen**
+   sich der zu prüfende Inhalt befindet — inklusive etwas Kontext davor und danach
+3. Wichtig: Kopieren Sie nur sichtbaren Text, keine Bilder oder Icons. Befindet sich
+   ein Bild im Bereich, kopieren Sie Text vor und nach dem Bild in der richtigen Reihenfolge
+4. In das Textfeld **Auswahltext** einfügen (Strg+V)
 5. **Auswahl prüfen** klicken
 
-Bei Erfolg erscheint **✓ Gefunden** und Schritt 3 (Speichern) wird eingeblendet.
+Bei Erfolg erscheint **✓ Gefunden** und Schritt 3 wird eingeblendet.
 
-> **Mögliche Fehlermeldung:** „Das Wort ‚XY' wurde nicht gefunden." →
-> Das markierte Wort konnte im Quelltext der Seite nicht gefunden werden.
-> Häufige Ursachen: Sonderzeichen, versteckter JavaScript-Inhalt oder
-> Unterschiede zwischen angezeigtem und Quelltext. Text korrigieren und erneut prüfen.
+> **Fehlermeldung:** „Das Wort ‚XY' wurde nicht gefunden. Möglicherweise fehlt nur
+> ein Leerzeichen zwischen den Worten." → Text korrigieren und erneut versuchen.
+> Häufige Ursache: Beim Kopieren wurden zwei Wörter ohne Leerzeichen verbunden,
+> oder der Text wird von JavaScript dynamisch geladen.
 
-### Schritt 4 — Speichern
+### Schritt 3 — Feinauswahl (optional)
+
+Die Feinauswahl ermöglicht es, innerhalb des kopierten Umfelds **einen konkreten
+Wert** zu markieren — z. B. einen Preis, ein Datum oder eine Versionsnummer.
+Nur dieser Wert wird dann bei jeder Prüfung verglichen.
 
 ```
 ┌─────────────────────────────────────────────┐
-│ Bezeichnung (optional)                       │
-│ ┌──────────────────────────────────────┐ [✕]│
-│ │ z.B. heise.de Startseite             │    │
-│ └──────────────────────────────────────┘    │
-│                                              │
-│ Prüfintervall (Tage): [  1  ]               │
-│                                              │
-│  [Monitor speichern]  [Zurücksetzen]         │
+│ Preis        ab   198,00   Euro  verfügbar   │
+│              ──   ──────                     │
+│ Ausgewählt: 198,00                           │
 └─────────────────────────────────────────────┘
 ```
 
-1. Optional eine **Bezeichnung** eingeben (z. B. „heise.de Startseite")
-2. **Prüfintervall** festlegen: Wie viele Tage sollen zwischen zwei automatischen
-   Prüfungen liegen? (Minimum: 1 Tag)
-3. **Monitor speichern** klicken
+1. Klicken Sie auf die Wörter oder Zahlen, die Sie überwachen möchten
+   (z. B. den Preis „198,00")
+2. Ein zweiter Klick auf ein bereits markiertes Wort hebt die Auswahl wieder auf
+3. Klicken Sie auf **Feinauswahl übernehmen**
 
-Sie werden zur Übersicht weitergeleitet und sehen den neuen Eintrag in der Liste.
+> Wenn Sie keine Feinauswahl setzen möchten, klicken Sie auf **Überspringen** —
+> dann wird das gesamte Umfeld auf Änderungen verglichen.
+
+### Schritt 4 — Zeitintervall und Speichern
+
+```
+┌──────────────────────────────────────────────────┐
+│ Bezeichnung (optional)                            │
+│ ┌─────────────────────────────────────────────┐  │
+│ │ z.B. heise.de Startseite                    │  │
+│ └─────────────────────────────────────────────┘  │
+│                                                   │
+│ Erste Prüfung um:  [08:00 Uhr ▾]                 │
+│                                                   │
+│ Prüfintervall:  [ 1 ] Tage  [ 0 ] Std.  [ 0 ] Min│
+│                                                   │
+│  [Monitor speichern]  [Zurücksetzen]              │
+└──────────────────────────────────────────────────┘
+```
+
+1. Optional eine **Bezeichnung** eingeben (erscheint in der Übersicht)
+2. **Erste Prüfung um** — Uhrzeit des ersten automatischen Prüflaufs wählen
+3. **Prüfintervall** festlegen — wie viel Zeit zwischen zwei Prüfungen liegen soll
+   (Minimum: 15 Minuten; Beispiel: 1 Tag 0 Stunden 0 Minuten = täglich)
+4. **Monitor speichern** klicken
+
+Nach dem Speichern wird sofort eine erste Prüfung durchgeführt und Sie gelangen
+zur Detailansicht des neuen Monitors.
 
 ---
 
-## 6. Monitor-Übersicht
+## 7. Monitor-Übersicht
 
 Erreichbar über **Meine Monitore** in der Navigation oder `/list`.
 
 ```
-┌──────────────────┬──────────┬──────────────┬──────────┬───────────────┐
-│ Label / URL      │ Status   │ Letzte Prüf. │ Prüfungen│               │
-├──────────────────┼──────────┼──────────────┼──────────┼───────────────┤
-│ heise.de         │ 🟢 Aktiv │ 2026-05-28   │ 3        │ Anzeigen      │
-│ heise.de         │ 🟡 Geänd.│              │          │ Bearbeiten    │
-│ uhrzeit.org      │ 🟢 Aktiv │ 2026-05-11   │ 1        │ Löschen       │
-└──────────────────┴──────────┴──────────────┴──────────┴───────────────┘
+┌──────────────────┬──────────┬──────────────┬──────────┬────────────────────┐
+│ Label / URL      │ Status   │ Letzte Prüf. │ Prüfungen│                    │
+├──────────────────┼──────────┼──────────────┼──────────┼────────────────────┤
+│ heise.de         │ 🟢 Aktiv │ 2026-06-01   │ 12       │ Anzeigen Bearb. Lösch│
+│ uhrzeit.org      │ 🟠 Geänd.│ 2026-06-01   │  8       │ Anzeigen Bearb. Lösch│
+└──────────────────┴──────────┴──────────────┴──────────┴────────────────────┘
 ```
 
 **Status-Badges:**
-- 🟢 **Aktiv** — Monitor ist aktiv und wird beim nächsten Cron-Lauf geprüft
-- 🟡 **Geändert** — Die letzte Prüfung hat eine Änderung erkannt
-- 🟠 **Pausiert** — Monitor ist deaktiviert, wird nicht geprüft
-- 🔴 **Fehler** — Letzter Abruf ist fehlgeschlagen (Seite nicht erreichbar?)
+- 🟢 **Aktiv** — Monitor läuft, keine Änderung beim letzten Lauf
+- 🟠 **Geändert** — Die letzte Prüfung hat eine Änderung erkannt
+- 🟡 **Pausiert** — Monitor ist deaktiviert, wird nicht geprüft
+- 🔴 **Fehler** — Letzter Abruf ist fehlgeschlagen
 
 ---
 
-## 7. Monitor anzeigen und Verlauf einsehen
+## 8. Monitor anzeigen und Verlauf einsehen
 
-Klicken Sie in der Übersicht auf **Anzeigen** (oder rufen Sie `/monitor/{id}` auf).
+Klicken Sie in der Übersicht auf **Anzeigen** (oder `/monitor/{id}`).
 
-Die Detailansicht zeigt:
-- URL und Textausschnitt
-- Erstellungsdatum
-- Tabelle der letzten 20 Prüfungen:
+Die Detailansicht zeigt alle Konfigurationsdetails sowie die letzten 20 Prüfläufe:
 
 ```
-┌──────────────────────┬────────────────┬──────────┐
-│ Zeitpunkt            │ Status         │ Größe    │
-├──────────────────────┼────────────────┼──────────┤
-│ 2026-05-28 15:00     │ 🟢 Unverändert │ 887.3 KB │
-│ 2026-05-27 15:00     │ 🟡 Geändert    │ 881.1 KB │
-│ 2026-05-26 15:00     │ 🟢 Unverändert │ 880.9 KB │
-└──────────────────────┴────────────────┴──────────┘
+┌─────────────────┬────────────────┬───────────┬──────────┬────┐
+│ Zeitpunkt       │ Status         │ Wert      │ Größe    │    │
+├─────────────────┼────────────────┼───────────┼──────────┼────┤
+│ 2026-06-01 08:00│ 🟢 Unverändert │ 198,00    │ 887.3 KB │ 🔍 │
+│ 2026-05-31 08:00│ 🟠 Geändert    │ 220,99    │ 881.1 KB │ 🔍 │
+│ 2026-05-30 08:00│ 🟢 Unverändert │ 198,00    │ 880.9 KB │ 🔍 │
+└─────────────────┴────────────────┴───────────┴──────────┴────┘
 ```
 
-> Wenn noch keine Prüfungen stattgefunden haben, erscheint ein Hinweis mit dem
-> CLI-Befehl zum manuellen Start.
+- **Wert** — der zum Zeitpunkt der Prüfung gefundene Wert der Feinauswahl
+  (nur sichtbar wenn eine Feinauswahl gesetzt ist)
+- **🔍** — öffnet die [Quelltext-Ansicht](#9-quelltext-ansicht) für genau diesen Dump
+- **✕** — löscht diesen Dump (außer dem ersten, der als Basislinie erhalten bleibt)
+
+Über den Button **🔍 Quelltext prüfen** (oben rechts) kann jederzeit die
+aktuelle Live-Version der Seite mit den markierten Fundstellen geprüft werden.
 
 ---
 
-## 8. Monitor bearbeiten
+## 9. Quelltext-Ansicht
+
+Die Quelltext-Ansicht zeigt den abgerufenen HTML-Quelltext mit farbig markierten
+Fundstellen der Auswahl. Sie hilft zu prüfen, ob der Such-Algorithmus die
+beabsichtigte Stelle trifft.
+
+**Farbkodierung:**
+- 🟡 **Gelb** — Wörter des Umfelds (äußere Auswahl)
+- 🟠 **Orange** — Wörter der Feinauswahl
+
+### Quelle wählen
+
+```
+[ 🌐 Live abrufen ]  [ ◀ Neuer ]  [ Dump wählen … ▾ ]  [ Älter ▶ ]
+```
+
+- **Live abrufen** — lädt die Seite jetzt neu (aktueller Stand)
+- **Dump wählen** — wählt einen gespeicherten Dump aus der Verlaufsliste
+- **◀ Neuer / Älter ▶** — navigiert zwischen gespeicherten Dumps
+
+### Toolbar
+
+```
+[ Suchen: ____________ ] [ ↑ Vorh. ] [ ↓ Nächste ]  [ ▶ Zur Feinauswahl ] [ ▶ Zum Umfeld ]
+```
+
+- **Suchen** — durchsucht den Quelltext, markiert alle Treffer
+- **↑ Vorh. / ↓ Nächste** — springt zwischen Suchtreffern
+- **▶ Zur Feinauswahl** — springt zur nächsten orangenen Markierung (bei mehreren Fundstellen)
+- **▶ Zum Umfeld** — springt zur nächsten gelben Markierung
+
+---
+
+## 10. Monitor bearbeiten
 
 Klicken Sie in der Übersicht oder Detailansicht auf **Bearbeiten**.
 
 Änderbar sind:
 - **Bezeichnung** — der angezeigte Name in der Übersicht
 - **Status** — `Aktiv` oder `Pausiert`
-- **Prüfintervall** — Anzahl Tage zwischen zwei Prüfungen
+- **Prüfintervall** — Tage, Stunden und Minuten zwischen zwei Prüfungen
+- **Startzeit** — Uhrzeit des ersten Prüflaufs
 
 URL und Textausschnitt können nach dem Speichern **nicht** geändert werden.
 Legen Sie in diesem Fall einen neuen Monitor an.
 
 ---
 
-## 9. Monitor löschen
+## 11. Monitor löschen
 
 Klicken Sie in der Übersicht auf **Löschen**. Ein Bestätigungsdialog erscheint.
 
@@ -329,22 +383,21 @@ Klicken Sie in der Übersicht auf **Löschen**. Ein Bestätigungsdialog erschein
 
 ---
 
-## 10. Automatisches Monitoring einrichten (Cron)
+## 12. Automatisches Monitoring einrichten (Cron)
 
 Das automatische Monitoring erfolgt durch einen **Cron-Job** auf dem Server.
-Ein Cron-Job ist eine geplante Aufgabe, die zu festgelegten Zeiten automatisch ausgeführt wird.
 
-**Empfohlene Einstellung:** Täglich um 15:00 Uhr
+**Empfohlene Einstellung:** Stündlicher Aufruf
 
 ```
 0 * * * * /usr/bin/php /pfad/zum/project_contentmonitor/app/Cli/monitor.php --all >> /pfad/zum/project_contentmonitor/app/monitor.log 2>&1
 ```
 
 Was passiert dabei:
-1. Das Script lädt alle aktiven Monitore, die laut ihrem Intervall fällig sind
-2. Für jeden Monitor wird die Webseite erneut abgerufen
-3. Der Inhalt wird mit dem letzten gespeicherten Inhalt verglichen
-4. Wurde eine Änderung erkannt, wird eine E-Mail an den Nutzer gesendet
+1. Das Script lädt alle aktiven Monitore, deren Prüfintervall abgelaufen ist
+2. Für jeden fälligen Monitor wird die Webseite abgerufen
+3. Der Inhalt wird mit dem letzten gespeicherten Wert verglichen
+4. Bei einer Änderung wird eine E-Mail an den Nutzer gesendet
 5. Das Ergebnis wird in der Datenbank gespeichert
 
 > Der Cron-Job wird vom Administrator eingerichtet. Als Nutzer müssen Sie
@@ -352,7 +405,7 @@ Was passiert dabei:
 
 ---
 
-## 11. Monitoring manuell starten (CLI)
+## 13. Monitoring manuell starten (CLI)
 
 Wer Zugang zum Server hat, kann das Monitoring auch manuell starten:
 
@@ -381,11 +434,11 @@ Fertig.
 
 ---
 
-## 12. Häufige Probleme und Lösungen
+## 14. Häufige Probleme und Lösungen
 
 ### „Diese Adresse ist nicht erreichbar"
 
-**Ursache:** Die URL ist nicht erreichbar, gibt keinen HTTP-200-Status zurück,
+**Ursache:** Die URL ist nicht erreichbar, gibt keinen HTTP-200-Status zurück
 oder liefert keinen HTML-Inhalt (z. B. PDF, Bild, API-Endpunkt).
 
 **Lösung:**
@@ -397,20 +450,19 @@ oder liefert keinen HTML-Inhalt (z. B. PDF, Bild, API-Endpunkt).
 
 ### „Das Wort ‚XY' wurde nicht gefunden"
 
-**Ursache:** Der kopierte Text enthält ein Wort, das im HTML-Quelltext der Seite
-nicht vorkommt.
+**Ursache:** Ein Wort im kopierten Text kommt im HTML-Quelltext nicht vor.
 
 **Häufige Ursachen:**
+- Beim Kopieren wurden zwei Wörter ohne Leerzeichen verbunden
 - Der Text wird von JavaScript dynamisch geladen (ContentMonitor prüft nur den
   statischen HTML-Quelltext)
 - Sonderzeichen oder geschützte Leerzeichen im kopierten Text
-- Die Seite hat sich zwischen dem Öffnen und dem Einfügen des Textes verändert
 
 **Lösung:**
+- Text mit einem Leerzeichen zwischen den betroffenen Wörtern korrigieren
 - Seite erneut öffnen und Text frisch kopieren
-- Kürzen: weniger Text verwenden, dafür eindeutigeren
-- Im Browser: Seite → Rechtsklick → „Seitenquelltext anzeigen" und prüfen,
-  ob der Text dort vorkommt (Strg+F)
+- Im Browser: Rechtsklick → „Seitenquelltext anzeigen" → mit Strg+F prüfen ob
+  der Text dort vorkommt
 
 ---
 
@@ -443,7 +495,7 @@ nicht vorkommt.
 
 ---
 
-## 13. Administrationshinweise
+## 15. Administrationshinweise
 
 ### Neuen Nutzer anlegen
 
@@ -466,24 +518,15 @@ mysqldump -u contentmonitor -p contentmonitor > backup_$(date +%Y%m%d).sql
 ### Log-Datei des Cron-Jobs prüfen
 
 ```bash
-tail -50 /var/log/contentmonitor.log
-```
-
-### Dump-Migration (einmalig nach Erstinstallation)
-
-Falls historische Dump-Dateien aus dem Verzeichnis `app/dump/` in die Datenbank
-übernommen werden sollen:
-
-```bash
-php app/Cli/migrate_dumps.php
+tail -50 /pfad/zum/project_contentmonitor/app/monitor.log
 ```
 
 ### APP_ENV umschalten
 
 In `app/config.php`:
 ```php
-define('APP_ENV', 'prod');  // Produktivbetrieb — keine Debug-Ausgaben
-define('APP_ENV', 'dev');   // Entwicklung — debug()-Ausgaben aktiv
+define('APP_ENV', 'prod');  // Produktivbetrieb — keine Debug-Ausgaben im Browser
+define('APP_ENV', 'dev');   // Entwicklung
 ```
 
 ---

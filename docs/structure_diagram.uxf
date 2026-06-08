@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+
+  <!-- ============================================================ -->
+  <!-- PROJEKT-WURZEL                                                -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>10</y><w>210</w><h>80</h></coordinates>
+    <panel_attributes>contentmonitor/
+&lt;&lt;project root&gt;&gt;
+--
+index.php
+composer.json</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- db/ -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>120</y><w>210</w><h>190</h></coordinates>
+    <panel_attributes>db/
+--
+schema.sql
+data.sql
+drop.sql
+migrate_add_interval.sql
+migrate_add_start_hour.sql
+migrate_interval_to_minutes.sql
+migrate_add_last_checked_at.sql
+migrate_add_check_count.sql</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- img/ -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>340</y><w>210</w><h>60</h></coordinates>
+    <panel_attributes>img/
+--
+light-bulb-idea-svgrepo-com-green.svg</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- APP/ — Einstieg                                               -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>260</x><y>10</y><w>190</w><h>80</h></coordinates>
+    <panel_attributes>app/
+--
+config.php
+router.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- app/Cli/ -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>260</x><y>120</y><w>190</w><h>70</h></coordinates>
+    <panel_attributes>app/Cli/
+--
+monitor.php
+migrate_dumps.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- app/Model/ -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>260</x><y>220</y><w>190</w><h>100</h></coordinates>
+    <panel_attributes>app/Model/
+--
+DB.php
+MonitoredPage.php
+MonitoringDump.php
+User.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- APP/SERVICE/                                                   -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>490</x><y>10</y><w>230</w><h>160</h></coordinates>
+    <panel_attributes>app/Service/
+--
+MonitoringService.php
+NotificationService.php
+SelectionSearchService.php
+SessionService.php
+UrlCheckResult.php
+UrlCheckService.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- APP/CONTROLLER/                                               -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>760</x><y>10</y><w>240</w><h>330</h></coordinates>
+    <panel_attributes>app/Controller/
+--
+AbstractController.php
+--
+HomeController.php
+LoginController.php
+LogoutController.php
+UserSettingsController.php
+MonitorAddController.php
+MonitorEditController.php
+MonitorListController.php
+MonitorViewController.php
+MonitorDeleteController.php
+MonitorDumpDeleteController.php
+MonitorDebugController.php
+--
+PostState.php  &lt;&lt;enum&gt;&gt;
+UrlState.php   &lt;&lt;enum&gt;&gt;</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- APP/VIEW/                                                      -->
+  <!-- ============================================================ -->
+
+  <!-- layout/ -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>490</x><y>210</y><w>230</w><h>70</h></coordinates>
+    <panel_attributes>app/View/layout/
+--
+header.php
+footer.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- auth/ -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>490</x><y>310</y><w>230</w><h>60</h></coordinates>
+    <panel_attributes>app/View/auth/
+--
+login.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- monitor/ -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>490</x><y>400</y><w>230</w><h>130</h></coordinates>
+    <panel_attributes>app/View/monitor/
+--
+add.php
+edit.php
+list.php
+view.php
+debug.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- user/ + home -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>490</x><y>560</y><w>230</w><h>70</h></coordinates>
+    <panel_attributes>app/View/user/  +  app/View/
+--
+settings.php
+home.php</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- VERBINDUNGEN: Anfrage-Fluss                                   -->
+  <!-- ============================================================ -->
+
+  <!-- index.php → app/ (router) -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>215</x><y>40</y><w>50</w><h>20</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;10;50;10</additional_attributes>
+  </element>
+
+  <!-- app/ (router) → Controller -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>445</x><y>40</y><w>320</w><h>20</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;10;320;10</additional_attributes>
+  </element>
+
+  <!-- Controller → Service -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>720</x><y>90</y><w>45</w><h>20</h></coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>45;10;0;10</additional_attributes>
+  </element>
+
+  <!-- Controller → View -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>720</x><y>250</y><w>45</w><h>20</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>45;10;0;10</additional_attributes>
+  </element>
+
+  <!-- Service → Model -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>445</x><y>90</y><w>50</w><h>20</h></coordinates>
+    <panel_attributes>lt=&lt;.</panel_attributes>
+    <additional_attributes>50;10;0;10</additional_attributes>
+  </element>
+
+  <!-- Cli/monitor.php → Service -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>445</x><y>155</y><w>50</w><h>20</h></coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>0;10;50;10</additional_attributes>
+  </element>
+
+</diagram>

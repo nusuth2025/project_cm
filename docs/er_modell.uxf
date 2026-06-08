@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<diagram program="umlet" version="15.1">
+  <zoom_level>10</zoom_level>
+
+  <!-- ============================================================ -->
+  <!-- ENTITÄTEN                                                     -->
+  <!-- ============================================================ -->
+
+  <!-- Benutzer — FA 01, FA 11, NFA 03 -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>160</y><w>250</w><h>160</h></coordinates>
+    <panel_attributes>Benutzer
+&lt;&lt;entity&gt;&gt;
+--
+PK  id: INT
+    benutzername: VARCHAR  UNIQUE
+    email: VARCHAR         UNIQUE
+    passwort_hash: VARCHAR
+    erstellt_am: DATETIME
+--
+NFA 03: Passwort verschlüsselt gespeichert
+FA 11: mehrere Nutzer unabhängig</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- Überwachungsauftrag — FA 02, FA 03, FA 04, FA 05, FA 08, FA 10 -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>370</x><y>10</y><w>280</w><h>230</h></coordinates>
+    <panel_attributes>Überwachungsauftrag
+&lt;&lt;entity&gt;&gt;
+--
+PK  id: INT
+FK  benutzer_id: INT
+    url: VARCHAR               FA 02
+    auswahl_text: TEXT         FA 03
+    bezeichnung: VARCHAR       optional
+    status: ENUM               aktiv | pausiert
+    pruef_intervall_min: INT   FA 04, min. 15
+    startzeit_stunde: TINYINT
+    erstellt_am: DATETIME
+    aktualisiert_am: DATETIME
+--
+FA 05/08: Grundlage der Übersichtsseite
+FA 10: Löschen entfernt Auftrag + Ergebnisse</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- Prüfergebnis — FA 06, FA 07, FA 09 -->
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>760</x><y>160</y><w>280</w><h>200</h></coordinates>
+    <panel_attributes>Prüfergebnis
+&lt;&lt;entity&gt;&gt;
+--
+PK  id: INT
+FK  auftrag_id: INT
+    geprueft_am: DATETIME      FA 09
+    seiten_snapshot: LONGTEXT  FA 06
+    gefundener_inhalt: TEXT    FA 09
+    geaendert: BOOLEAN         FA 07
+    aenderungshinweis: TEXT    FA 07
+--
+FA 06: automatische Prüfung lt. Intervall
+FA 07: geaendert = true löst Benachrichtigung aus</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- BEZIEHUNGEN                                                   -->
+  <!-- ============================================================ -->
+
+  <!-- Benutzer (1) ────── legt an ────── (N) Überwachungsauftrag -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>255</x><y>220</y><w>120</w><h>60</h></coordinates>
+    <panel_attributes>lt=-
+legt an
+m1=1
+m2=0..*</panel_attributes>
+    <additional_attrs>0;30;120;30</additional_attrs>
+  </element>
+
+  <!-- Überwachungsauftrag (1) ────── erzeugt ────── (N) Prüfergebnis -->
+  <element>
+    <type>com.umlet.element.Relation</type>
+    <coordinates><x>645</x><y>220</y><w>120</w><h>60</h></coordinates>
+    <panel_attributes>lt=-
+erzeugt
+m1=1
+m2=0..*</panel_attributes>
+    <additional_attrs>0;30;120;30</additional_attrs>
+  </element>
+
+  <!-- ============================================================ -->
+  <!-- HINWEISE AUS DEN GRENZEN                                     -->
+  <!-- ============================================================ -->
+
+  <element>
+    <type>com.umlet.element.Class</type>
+    <coordinates><x>10</x><y>390</y><w>1030</w><h>120</h></coordinates>
+    <panel_attributes>Grenzen (nicht im Projektumfang)
+&lt;&lt;note&gt;&gt;
+--
+- Nutzerregistrierung: Accounts werden vom Administrator initial angelegt (kein Registrierungs-Entity nötig)
+- Kein JavaScript-Rendering: seiten_snapshot enthält nur statisches HTML
+- Keine Unterschied-Anzeige: aenderungshinweis ist freitext, kein strukturierter Diff
+- Kein Produktivserver-Betrieb: NFA 01 — nur lokale Lauffähigkeit gefordert</panel_attributes>
+    <additional_attrs/>
+  </element>
+
+</diagram>
