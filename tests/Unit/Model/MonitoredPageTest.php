@@ -13,16 +13,17 @@ final class MonitoredPageTest extends TestCase
     protected function setUp(): void
     {
         $this->row = [
-            'id'                   => '7',
-            'user_id'              => '3',
-            'url'                  => 'https://example.com',
-            'selection_text'       => 'some selection',
-            'inner_selection_text' => 'inner',
-            'label'                => 'My Page',
-            'status'               => 'active',
-            'check_interval_days'  => '7',
-            'created_at'           => '2025-01-01 10:00:00',
-            'updated_at'           => '2025-06-01 12:00:00',
+            'id'                    => '7',
+            'user_id'               => '3',
+            'url'                   => 'https://example.com',
+            'selection_text'        => 'some selection',
+            'inner_selection_text'  => 'inner',
+            'label'                 => 'My Page',
+            'status'                => 'active',
+            'check_interval_minutes' => '1440',
+            'start_hour'            => '8',
+            'created_at'            => '2025-01-01 10:00:00',
+            'updated_at'            => '2025-06-01 12:00:00',
         ];
     }
 
@@ -37,7 +38,8 @@ final class MonitoredPageTest extends TestCase
         self::assertSame('inner', $page->innerSelectionText);
         self::assertSame('My Page', $page->label);
         self::assertSame('active', $page->status);
-        self::assertSame(7, $page->checkIntervalDays);
+        self::assertSame(1440, $page->checkIntervalMinutes);
+        self::assertSame(8, $page->startHour);
         self::assertInstanceOf(\DateTimeImmutable::class, $page->createdAt);
         self::assertInstanceOf(\DateTimeImmutable::class, $page->updatedAt);
         self::assertSame('2025-01-01', $page->createdAt->format('Y-m-d'));
@@ -63,5 +65,21 @@ final class MonitoredPageTest extends TestCase
 
         self::assertIsInt($page->id);
         self::assertIsInt($page->userId);
+    }
+
+    public function testFromRowUsesDefaultIntervalWhenMissing(): void
+    {
+        unset($this->row['check_interval_minutes']);
+        $page = MonitoredPage::fromRow($this->row);
+
+        self::assertSame(1440, $page->checkIntervalMinutes);
+    }
+
+    public function testFromRowUsesDefaultStartHourWhenMissing(): void
+    {
+        unset($this->row['start_hour']);
+        $page = MonitoredPage::fromRow($this->row);
+
+        self::assertSame(8, $page->startHour);
     }
 }

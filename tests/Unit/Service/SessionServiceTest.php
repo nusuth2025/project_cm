@@ -16,26 +16,6 @@ final class SessionServiceTest extends TestCase
         $this->service = new SessionService();
     }
 
-    // --- ensureSessionId / getSessionId ---
-
-    public function testEnsureSessionIdCreatesId(): void
-    {
-        $this->service->ensureSessionId();
-        self::assertStringStartsWith('monitor', $this->service->getSessionId());
-    }
-
-    public function testEnsureSessionIdDoesNotOverwriteExistingId(): void
-    {
-        $_SESSION['S_ID'] = 'monitor_existing';
-        $this->service->ensureSessionId();
-        self::assertSame('monitor_existing', $this->service->getSessionId());
-    }
-
-    public function testGetSessionIdReturnsNullWhenNotSet(): void
-    {
-        self::assertNull($this->service->getSessionId());
-    }
-
     // --- URL ---
 
     public function testSetAndGetUrl(): void
@@ -103,7 +83,6 @@ final class SessionServiceTest extends TestCase
 
     public function testClearMonitorFlowRemovesMonitorKeys(): void
     {
-        $this->service->ensureSessionId();
         $this->service->setUrl('https://example.com');
         $this->service->setSelection('text');
         $this->service->setInnerSelection('inner');
@@ -111,7 +90,6 @@ final class SessionServiceTest extends TestCase
 
         $this->service->clearMonitorFlow();
 
-        self::assertNull($this->service->getSessionId());
         self::assertNull($this->service->getUrl());
         self::assertNull($this->service->getSelection());
         self::assertNull($this->service->getInnerSelection());
