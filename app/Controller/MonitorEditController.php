@@ -36,7 +36,7 @@ class MonitorEditController extends AbstractController
 
             $days         = max(0, (int) ($_POST['interval_days']    ?? 0));
             $hours        = max(0, min(23, (int) ($_POST['interval_hours']   ?? 0)));
-            $mins         = max(0, min(59, (int) ($_POST['interval_minutes'] ?? 0)));
+            $mins         = (int) round(max(0, min(45, (int) ($_POST['interval_minutes'] ?? 0))) / 15) * 15;
             $totalMinutes = $days * 1440 + $hours * 60 + $mins;
             $startHour    = max(0, min(23, (int) ($_POST['start_hour'] ?? 8)));
 

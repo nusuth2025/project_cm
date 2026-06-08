@@ -11,7 +11,7 @@ require BASE_PATH . '/app/View/layout/header.php';
 
     <!-- Linke Spalte: Schritt-Anzeige -->
     <div class="lg:col-span-1">
-        <div class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        <div id="steps-block" class="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
             <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wide">Schritte</h2>
 
             <?php
@@ -45,6 +45,68 @@ require BASE_PATH . '/app/View/layout/header.php';
                 </div>
             <?php endif; ?>
         </div>
+
+        <?php if ($urlState === UrlState::Valid && $postState !== PostState::Valid): ?>
+        <!-- Äußerer Container: overflow:hidden + Höhe per JS = harter Clip -->
+        <div id="hint-block"
+             class="mt-6 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 leading-relaxed"
+             style="position:relative; overflow:hidden;">
+            <!-- Innerer Container: scrollt bei Überlauf -->
+            <div id="hint-scroll" class="p-5 overflow-y-auto" style="height:100%;">
+                <div class="space-y-2">
+                    <p class="font-semibold text-green-900">Hinweis zur Textauswahl</p>
+                    <p>Markieren und kopieren Sie einen Text-Bereich, innerhalb dessen sich Ihr zu prüfender Text befindet.</p>
+                    <p>Versuchen Sie Elemente in der Auswahl zu vermeiden, die nicht als Text angezeigt werden. Beispielsweise Bilder.</p>
+                    <p>Stattdessen kopieren Sie einen Text vor dem Bild und einen zweiten nach dem Bild, sollte sich ein Bild dazwischen befinden. Wichtig ist, die Reihenfolge beizubehalten.</p>
+                    <p>Die verwendeten Texte sollten möglichst eindeutig, aber nicht zu lang sein, um den Erkennungsprozess zu erleichtern.</p>
+                    <p>Sie können nach dem Prüfen Ihrer Auswahl in der Feinauswahl Ihren zu prüfenden Inhalt einfach klicken.</p>
+                </div>
+            </div>
+            <!-- Fade absolut am unteren Rand des geclippten Containers -->
+            <div id="hint-fade"
+                 style="position:absolute; bottom:0; left:0; right:0; height:3rem;
+                        background:linear-gradient(to bottom, transparent, #eff6ff);
+                        border-radius:0 0 0.75rem 0.75rem;
+                        pointer-events:none; transition:opacity 0.3s; opacity:0;">
+            </div>
+        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var hint   = document.getElementById('hint-block');
+            var scroll = document.getElementById('hint-scroll');
+            var step2  = document.getElementById('step2-block');
+            var fade   = document.getElementById('hint-fade');
+            if (!hint || !scroll || !step2) return;
+
+            function align() {
+                if (window.innerWidth < 1024) {
+                    hint.style.height  = '';
+                    scroll.style.height = '';
+                    updateFade();
+                    return;
+                }
+                var available = step2.getBoundingClientRect().bottom
+                              - hint.getBoundingClientRect().top;
+                if (available > 80) {
+                    hint.style.height   = available + 'px';
+                    scroll.style.height = available + 'px';
+                }
+                updateFade();
+            }
+
+            function updateFade() {
+                if (!fade) return;
+                var overflows = scroll.scrollHeight > scroll.clientHeight + 2;
+                var atBottom  = scroll.scrollHeight - scroll.scrollTop <= scroll.clientHeight + 2;
+                fade.style.opacity = (overflows && !atBottom) ? '1' : '0';
+            }
+
+            align();
+            window.addEventListener('resize', align);
+            scroll.addEventListener('scroll', updateFade);
+        });
+        </script>
+        <?php endif; ?>
     </div>
 
     <!-- Rechte Spalte: Formulare -->
@@ -112,7 +174,7 @@ require BASE_PATH . '/app/View/layout/header.php';
 
         <!-- Schritt 2: Auswahl (nur sichtbar wenn URL gesetzt) -->
         <?php if ($urlState === UrlState::Valid): ?>
-        <div class="bg-white border border-gray-200 rounded-xl p-6">
+        <div id="step2-block" class="bg-white border border-gray-200 rounded-xl p-6">
             <h2 class="font-semibold text-gray-800 mb-3">Textauswahl treffen</h2>
             <div class="flex items-center gap-3 mb-4 p-3 bg-green-100 border border-green-400 rounded-lg">
                 <span class="text-sm text-green-900 truncate min-w-0 font-medium">
@@ -349,7 +411,7 @@ require BASE_PATH . '/app/View/layout/header.php';
                             <div class="mt-1 text-xs text-center text-gray-400">Stunden</div>
                         </div>
                         <div>
-                            <input type="number" name="interval_minutes" min="0" max="59" value="15"
+                            <input type="number" name="interval_minutes" min="0" max="45" step="15" value="15"
                                    class="w-20 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center
                                           focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
                             <div class="mt-1 text-xs text-center text-gray-400">Minuten</div>

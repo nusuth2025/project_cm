@@ -31,7 +31,7 @@ class MonitorViewController extends AbstractController
         }
 
         $stmt2 = $db->prepare(
-            'SELECT id, found_at, changed,
+            'SELECT id, found_at, changed, checked_content,
                     LENGTH(html_content) AS html_bytes
              FROM monitoring_dumps
              WHERE monitored_page_id = ?
@@ -41,6 +41,19 @@ class MonitorViewController extends AbstractController
         $stmt2->execute([$this->pageId]);
         $dumps = $stmt2->fetchAll();
 
-        $this->render('monitor/view', ['page' => $page, 'dumps' => $dumps]);
+        // Initialen (ältesten) Dump ermitteln — dieser darf nicht gelöscht werden
+        $initStmt = $db->prepare(
+            'SELECT id FROM monitoring_dumps WHERE monitored_page_id = ?
+             ORDER BY found_at ASC LIMIT 1'
+        );
+        $initStmt->execute([$this->pageId]);
+        $initRow       = $initStmt->fetch();
+        $initialDumpId = $initRow ? (int)$initRow['id'] : null;
+
+        $this->render('monitor/view', [
+            'page'          => $page,
+            'dumps'         => $dumps,
+            'initialDumpId' => $initialDumpId,
+        ]);
     }
 }

@@ -84,7 +84,7 @@ class MonitorAddController extends AbstractController
                 $postState       = PostState::Problem;
                 $failedSelection = $selection;
                 $selectionError  = $missingWord !== null
-                    ? 'Das Wort "' . htmlspecialchars($missingWord['word']) . '" wurde nicht gefunden.'
+                    ? 'Das Wort "' . htmlspecialchars($missingWord['word']) . '" wurde nicht gefunden. Möglicherweise fehlt nur ein Leerzeichen zwischen den Worten.'
                     : 'Die Auswahl wurde im Seiteninhalt nicht gefunden.';
             } else {
                 $this->session->setSelection($selection);
@@ -122,7 +122,7 @@ class MonitorAddController extends AbstractController
             $db           = DB::getInstance();
             $days         = max(0, (int) ($_POST['interval_days']    ?? 0));
             $hours        = max(0, min(23, (int) ($_POST['interval_hours']   ?? 0)));
-            $mins         = max(0, min(59, (int) ($_POST['interval_minutes'] ?? 0)));
+            $mins         = (int) round(max(0, min(45, (int) ($_POST['interval_minutes'] ?? 0))) / 15) * 15;
             $totalMinutes = max(15, $days * 1440 + $hours * 60 + $mins);
             $startHour    = max(0, min(23, (int) ($_POST['start_hour'] ?? 8)));
 
@@ -145,8 +145,23 @@ class MonitorAddController extends AbstractController
                 $startHour,
                 'active',
             ]);
+            $newId = (int) $db->lastInsertId();
+
+            // Initialen Dump sofort erzeugen — damit die Quelltext-Ansicht
+            // direkt nach dem Speichern nutzbar ist.
+            try {
+                $pageRow = $db->prepare('SELECT * FROM monitored_pages WHERE id = ?');
+                $pageRow->execute([$newId]);
+                $page = \App\Model\MonitoredPage::fromRow($pageRow->fetch());
+                $this->monitoringService->runCheck($page);
+                $db->prepare('UPDATE monitored_pages SET last_checked_at = NOW(), check_count = 1 WHERE id = ?')
+                   ->execute([$newId]);
+            } catch (\Throwable) {
+                // Netzwerkfehler o.ä.: Monitor wurde gespeichert, Dump folgt beim nächsten Cron-Lauf
+            }
+
             $this->session->clearMonitorFlow();
-            $this->redirect('/list');
+            $this->redirect('/monitor/' . $newId);
         }
 
         // Zurücksetzen

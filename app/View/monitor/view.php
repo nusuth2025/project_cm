@@ -68,6 +68,14 @@
         <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Startzeit (Erstlauf)</div>
         <div><?= sprintf('%02d:00 Uhr', (int)($page['start_hour'] ?? 8)) ?></div>
     </div>
+    <div>
+        <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Letzte Prüfung</div>
+        <div><?= $page['last_checked_at'] ? htmlspecialchars(substr($page['last_checked_at'], 0, 16)) : '–' ?></div>
+    </div>
+    <div>
+        <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Prüfungen gesamt</div>
+        <div><?= (int)($page['check_count'] ?? 0) ?></div>
+    </div>
     <?php if (!empty($page['inner_selection_text'])): ?>
     <div class="sm:col-span-2">
         <div class="text-gray-500 text-xs uppercase tracking-wide mb-1">Feinauswahl</div>
@@ -92,7 +100,10 @@
         if ($innerText !== '') {
             // Feinauswahl-Wörter im Außenbereich hervorheben
             $innerWords = preg_split('/\s+/', trim($innerText), -1, PREG_SPLIT_NO_EMPTY);
-            $patterns   = array_map(fn($w) => preg_quote($w, '/'), $innerWords);
+            $patterns = [];
+            foreach ($innerWords as $w) {
+                $patterns[] = preg_quote($w, '/');
+            }
             $regex      = '/(' . implode('|', $patterns) . ')/';
             $parts      = preg_split($regex, $outerText, -1, PREG_SPLIT_DELIM_CAPTURE);
             $rendered   = '';
@@ -129,7 +140,11 @@
                 <tr>
                     <th class="text-left px-4 py-3 font-medium text-gray-600">Zeitpunkt</th>
                     <th class="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                    <?php if (!empty($page['inner_selection_text'])): ?>
+                    <th class="text-left px-4 py-3 font-medium text-gray-600 hidden md:table-cell">Wert</th>
+                    <?php endif; ?>
                     <th class="text-left px-4 py-3 font-medium text-gray-600 hidden sm:table-cell">Größe</th>
+                    <th class="px-4 py-3"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">
@@ -149,8 +164,47 @@
                             </span>
                         <?php endif; ?>
                     </td>
+                    <?php if (!empty($page['inner_selection_text'])): ?>
+                    <td class="px-4 py-3 hidden md:table-cell">
+                        <?php
+                        $val = $dump['checked_content'];
+                        if ($val !== null && $val !== '' && $val !== '__OUTER_NOT_FOUND__') {
+                            echo '<span class="font-mono text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5">'
+                                . htmlspecialchars(mb_substr($val, 0, 80))
+                                . '</span>';
+                        } else {
+                            echo '<span class="text-gray-300 text-xs">–</span>';
+                        }
+                        ?>
+                    </td>
+                    <?php endif; ?>
                     <td class="px-4 py-3 text-gray-400 hidden sm:table-cell text-xs">
                         <?= number_format((int)($dump['html_bytes'] ?? 0) / 1024, 1) ?> KB
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                        <?php if ($page['selection_text'] !== null): ?>
+                        <a href="/monitor/<?= (int)$page['id'] ?>/quelle?dump_id=<?= (int)$dump['id'] ?>"
+                           target="_blank"
+                           class="text-xs text-amber-600 hover:text-amber-800 border border-amber-200
+                                  hover:border-amber-400 rounded px-2 py-0.5 transition-colors"
+                           title="Diesen Dump in der Quelltext-Ansicht betrachten">
+                            🔍
+                        </a>
+                        <?php endif; ?>
+                        <?php if ((int)$dump['id'] !== $initialDumpId): ?>
+                        <form method="post"
+                              action="/monitor/<?= (int)$page['id'] ?>/dump/<?= (int)$dump['id'] ?>/delete"
+                              onsubmit="return confirm('Dump löschen?')">
+                            <button type="submit"
+                                    class="text-xs text-red-400 hover:text-red-600 border border-red-200
+                                           hover:border-red-400 rounded px-2 py-0.5 transition-colors"
+                                    title="Diesen Dump löschen">
+                                ✕
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; ?>
