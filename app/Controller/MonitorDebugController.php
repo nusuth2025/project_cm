@@ -48,29 +48,51 @@ class MonitorDebugController extends AbstractController
         $innerValue      = null;
         $sourceLabel     = '';
         $dumpFoundAt     = null;
+        $currentDumpId   = null;
 
-        // Quelle bestimmen: ?quelle=dump → letzter gespeicherter Dump, sonst Live-Abruf
-        $useDump = (($_GET['quelle'] ?? '') === 'dump');
+        // Alle verfügbaren Dumps laden (für Navigation in der Ansicht)
+        $dumpListStmt = $db->prepare(
+            'SELECT id, found_at, changed FROM monitoring_dumps
+             WHERE monitored_page_id = ? AND html_content != ""
+             ORDER BY found_at DESC'
+        );
+        $dumpListStmt->execute([$this->pageId]);
+        $availableDumps = $dumpListStmt->fetchAll();
+
+        // Quelle bestimmen:
+        //   ?dump_id=X  → konkreter Dump
+        //   ?quelle=dump → letzter Dump (Rückwärtskompatibilität)
+        //   sonst       → Live-Abruf
+        $dumpIdParam = isset($_GET['dump_id']) ? (int)$_GET['dump_id'] : null;
+        $useDump     = $dumpIdParam !== null || ($_GET['quelle'] ?? '') === 'dump';
 
         if ($page['selection_text'] === null) {
             $error = 'Für diesen Monitor ist kein Umfeld-Text gesetzt.';
         } else {
             if ($useDump) {
-                // Letzten Dump aus der DB laden
-                $dumpStmt = $db->prepare(
-                    'SELECT html_content, found_at FROM monitoring_dumps
-                     WHERE monitored_page_id = ? AND html_content != ""
-                     ORDER BY found_at DESC LIMIT 1'
-                );
-                $dumpStmt->execute([$this->pageId]);
+                if ($dumpIdParam !== null) {
+                    $dumpStmt = $db->prepare(
+                        'SELECT id, html_content, found_at FROM monitoring_dumps
+                         WHERE id = ? AND monitored_page_id = ? AND html_content != ""'
+                    );
+                    $dumpStmt->execute([$dumpIdParam, $this->pageId]);
+                } else {
+                    $dumpStmt = $db->prepare(
+                        'SELECT id, html_content, found_at FROM monitoring_dumps
+                         WHERE monitored_page_id = ? AND html_content != ""
+                         ORDER BY found_at DESC LIMIT 1'
+                    );
+                    $dumpStmt->execute([$this->pageId]);
+                }
                 $dumpRow = $dumpStmt->fetch();
 
                 if (!$dumpRow || $dumpRow['html_content'] === '') {
                     $error   = 'Kein gespeicherter Dump vorhanden (oder HTML-Inhalt leer). Bitte zuerst einen Monitor-Lauf starten.';
                     $rawHtml = '';
                 } else {
-                    $rawHtml     = $dumpRow['html_content'];
-                    $dumpFoundAt = $dumpRow['found_at'];
+                    $rawHtml       = $dumpRow['html_content'];
+                    $dumpFoundAt   = $dumpRow['found_at'];
+                    $currentDumpId = (int)$dumpRow['id'];
                 }
                 $sourceLabel = 'Dump';
             } else {
@@ -84,8 +106,12 @@ class MonitorDebugController extends AbstractController
                 html_entity_decode($rawHtml, ENT_QUOTES | ENT_HTML5, 'UTF-8')
             );
 
+            // HTML-Tags maskieren damit findPositions() keine Wörter in Attributwerten findet.
+            // Byte-Positionen bleiben identisch zu $searchHtml.
+            $searchHtmlMasked = $this->searchService->maskHtmlTags($searchHtml);
+
             // Umfeld suchen
-            $outerPositions = $this->searchService->findPositions($searchHtml, $page['selection_text']);
+            $outerPositions = $this->searchService->findPositions($searchHtmlMasked, $page['selection_text']);
 
             // Feinauswahl-Positionen aus den äußeren Positionen ableiten
             // (identische Strategie wie MonitoringService::findInnerInOuterPositions)
@@ -110,12 +136,13 @@ class MonitorDebugController extends AbstractController
                     }
                 }
 
-                // Fallback: direkte Suche im HTML
+                // Fallback: direkte Suche im bereits tag-maskierten HTML
                 if (empty($innerAbsolute)) {
-                    $regionStart = $outerPositions[0];
-                    $regionEnd   = $outerPositions[count($outerPositions) - 1];
-                    $outerRegion = substr($searchHtml, $regionStart, $regionEnd - $regionStart);
-                    $relPositions = $this->searchService->findPositions($outerRegion, $page['inner_selection_text']);
+                    $regionStart  = $outerPositions[0];
+                    $regionEnd    = $outerPositions[count($outerPositions) - 1];
+                    $maskedRegion = substr($searchHtmlMasked, $regionStart, $regionEnd - $regionStart);
+
+                    $relPositions = $this->searchService->findPositions($maskedRegion, $page['inner_selection_text']);
                     foreach (array_chunk($relPositions, 2) as [$s, $e]) {
                         $innerAbsolute[] = $regionStart + $s;
                         $innerAbsolute[] = $regionStart + $e;
@@ -143,13 +170,15 @@ class MonitorDebugController extends AbstractController
                 if (!empty($page['inner_selection_text'])) {
                     $innerWords  = preg_split('/\s+/', trim($page['inner_selection_text']), -1, PREG_SPLIT_NO_EMPTY);
                     $outerWords  = preg_split('/\s+/', trim($page['selection_text']),       -1, PREG_SPLIT_NO_EMPTY);
-                    $reducedWords = array_values(array_filter(
-                        $outerWords,
-                        fn($w) => !in_array($w, $innerWords, true) && mb_strlen($w) >= 4
-                    ));
+                    $reducedWords = [];
+                    foreach ($outerWords as $w) {
+                        if (!in_array($w, $innerWords, true) && mb_strlen($w) >= 4) {
+                            $reducedWords[] = $w;
+                        }
+                    }
                     if (count($reducedWords) >= 2) {
                         $outerPositions = $this->searchService->findPositions(
-                            $searchHtml,
+                            $searchHtmlMasked,
                             implode(' ', $reducedWords)
                         );
                         if (!empty($outerPositions)) {
@@ -184,6 +213,8 @@ class MonitorDebugController extends AbstractController
             'useDump'         => $useDump,
             'sourceLabel'     => $sourceLabel,
             'dumpFoundAt'     => $dumpFoundAt,
+            'currentDumpId'   => $currentDumpId,
+            'availableDumps'  => $availableDumps,
         ]);
     }
 }

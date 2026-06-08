@@ -72,6 +72,13 @@
             color: #fed7aa;
         }
 
+        #fixed-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
         .toolbar {
             padding: 8px 20px;
             display: flex;
@@ -79,9 +86,6 @@
             align-items: center;
             background: #0f172a;
             border-bottom: 1px solid #1e293b;
-            position: sticky;
-            top: 0;
-            z-index: 10;
         }
         .toolbar label { font-size: 12px; color: #94a3b8; }
         .toolbar input[type=text] {
@@ -143,6 +147,7 @@
 </head>
 <body>
 
+<div id="fixed-top">
 <header>
     <div>
         <h1><?= htmlspecialchars($page['label'] ?? $page['url']) ?></h1>
@@ -150,24 +155,67 @@
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
         <?php
-        $baseUrl  = '/monitor/' . (int)$page['id'] . '/quelle';
-        $liveUrl  = $baseUrl;
-        $dumpUrl  = $baseUrl . '?quelle=dump';
+        $baseUrl = '/monitor/' . (int)$page['id'] . '/quelle';
         ?>
-        <a href="<?= $liveUrl ?>"
+        <a href="<?= $baseUrl ?>"
            style="font-size:12px;padding:5px 12px;border-radius:6px;text-decoration:none;
                   <?= !$useDump
                       ? 'background:#16a34a;color:#fff;font-weight:600;'
                       : 'background:#1e293b;color:#64748b;border:1px solid #334155;' ?>">
             🌐 Live abrufen
         </a>
-        <a href="<?= $dumpUrl ?>"
+
+        <?php if (!empty($availableDumps)): ?>
+        <?php
+        // Vorherigen / nächsten Dump ermitteln (Liste ist DESC sortiert)
+        $dumpIds   = array_column($availableDumps, 'id');
+        $curIdx    = $currentDumpId !== null ? array_search($currentDumpId, $dumpIds, true) : false;
+        $prevId    = ($curIdx !== false && isset($dumpIds[$curIdx - 1])) ? $dumpIds[$curIdx - 1] : null; // neuer
+        $nextId    = ($curIdx !== false && isset($dumpIds[$curIdx + 1])) ? $dumpIds[$curIdx + 1] : null; // älter
+        $firstId   = end($dumpIds);  // ältester
+        $latestId  = $dumpIds[0];    // neuester
+        ?>
+
+        <?php
+        $prevVisible = $currentDumpId !== null && $prevId !== null;
+        $nextVisible = $currentDumpId !== null && $nextId !== null;
+        ?>
+        <a href="<?= $prevVisible ? $baseUrl . '?dump_id=' . $prevId : '#' ?>"
+           style="font-size:12px;padding:5px 10px;border-radius:6px;text-decoration:none;
+                  background:#1e293b;color:#94a3b8;border:1px solid #334155;
+                  visibility:<?= $prevVisible ? 'visible' : 'hidden' ?>;"
+           title="Neuerer Dump">◀ Neuer</a>
+
+        <select onchange="if(this.value)location.href=this.value"
+                style="font-size:12px;padding:4px 8px;border-radius:6px;background:#1e293b;
+                       color:#e2e8f0;border:1px solid #334155;cursor:pointer;max-width:220px;">
+            <option value="">💾 Dump wählen …</option>
+            <?php foreach ($availableDumps as $d): ?>
+            <?php $dUrl = $baseUrl . '?dump_id=' . (int)$d['id']; ?>
+            <option value="<?= htmlspecialchars($dUrl) ?>"
+                    <?= $currentDumpId === (int)$d['id'] ? 'selected' : '' ?>>
+                <?= htmlspecialchars(substr($d['found_at'], 0, 16)) ?>
+                <?= $d['changed'] ? ' ✎' : '' ?>
+                <?= (int)$d['id'] === (int)$latestId ? ' (neuester)' : '' ?>
+                <?= (int)$d['id'] === (int)$firstId  ? ' (erster)' : '' ?>
+            </option>
+            <?php endforeach; ?>
+        </select>
+
+        <a href="<?= $nextVisible ? $baseUrl . '?dump_id=' . $nextId : '#' ?>"
+           style="font-size:12px;padding:5px 10px;border-radius:6px;text-decoration:none;
+                  background:#1e293b;color:#94a3b8;border:1px solid #334155;
+                  visibility:<?= $nextVisible ? 'visible' : 'hidden' ?>;"
+           title="Älterer Dump">Älter ▶</a>
+
+        <?php if (!$useDump): ?>
+        <a href="<?= $baseUrl ?>?dump_id=<?= $latestId ?>"
            style="font-size:12px;padding:5px 12px;border-radius:6px;text-decoration:none;
-                  <?= $useDump
-                      ? 'background:#b45309;color:#fff;font-weight:600;'
-                      : 'background:#1e293b;color:#64748b;border:1px solid #334155;' ?>">
-            💾 Letzter Dump<?= $dumpFoundAt ? ' (' . substr($dumpFoundAt, 0, 16) . ')' : '' ?>
+                  background:#1e293b;color:#64748b;border:1px solid #334155;">
+            💾 Neuester Dump
         </a>
+        <?php endif; ?>
+        <?php endif; ?>
     </div>
 </header>
 
@@ -206,10 +254,6 @@
     <?php endif; ?>
 </div>
 
-<?php if ($error !== null): ?>
-    <div class="notice"><?= htmlspecialchars($error) ?></div>
-<?php endif; ?>
-
 <?php if (!empty($highlightedHtml)): ?>
 <div class="toolbar">
     <label>Suchen:</label>
@@ -217,14 +261,25 @@
     <button onclick="jumpTo('prev')">↑ Vorh.</button>
     <button onclick="jumpTo('next')">↓ Nächste</button>
     <span id="match-count" style="font-size:11px;color:#64748b;"></span>
-    <button onclick="document.querySelectorAll('.hl-inner')[0]?.scrollIntoView({behavior:'smooth',block:'center'})"
-            style="margin-left:auto;">
+    <?php if ($innerFound): ?>
+    <button onclick="cycleMarks('inner')" id="btn-inner" style="margin-left:auto;">
         ▶ Zur Feinauswahl
     </button>
-    <button onclick="document.querySelectorAll('.hl-outer')[0]?.scrollIntoView({behavior:'smooth',block:'center'})">
+    <?php else: ?>
+    <span style="margin-left:auto;"></span>
+    <?php endif; ?>
+    <button onclick="cycleMarks('outer')" id="btn-outer">
         ▶ Zum Umfeld
     </button>
 </div>
+<?php endif; ?>
+</div><!-- #fixed-top -->
+
+<?php if ($error !== null): ?>
+    <div class="notice"><?= htmlspecialchars($error) ?></div>
+<?php endif; ?>
+
+<?php if (!empty($highlightedHtml)): ?>
 <div id="source-container">
     <pre id="source"><?= $highlightedHtml ?></pre>
 </div>
@@ -235,6 +290,15 @@
 <?php endif; ?>
 
 <script>
+// Body-Padding dem fixed Header anpassen — damit kein Inhalt darunter verdeckt wird
+(function () {
+    const top = document.getElementById('fixed-top');
+    if (!top) return;
+    function sync() { document.body.style.paddingTop = top.offsetHeight + 'px'; }
+    sync();
+    new ResizeObserver(sync).observe(top);
+}());
+
 // Einfache Suchfunktion im Quelltext
 let searchMatches = [];
 let matchIndex    = -1;
@@ -292,10 +356,54 @@ function jumpTo(dir) {
         (matchIndex + 1) + ' / ' + searchMatches.length;
 }
 
-// Direkt zur Feinauswahl scrollen wenn vorhanden
+// Cycle-Navigation für Umfeld- und Feinauswahl-Markierungen
+const cycleIdx  = { outer: -1, inner: -1 };
+const prevMark  = { outer: null, inner: null };
+
+function cycleMarks(type) {
+    const marks = document.querySelectorAll('.hl-' + type);
+    if (!marks.length) return;
+    cycleIdx[type] = (cycleIdx[type] + 1) % marks.length;
+    const el = marks[cycleIdx[type]];
+
+    // Vorheriges Element sofort zurücksetzen
+    if (prevMark[type] && prevMark[type] !== el) {
+        prevMark[type].style.outline = '';
+        prevMark[type].style.outlineOffset = '';
+    }
+    prevMark[type] = el;
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Aufleuchten: Element-Referenz im Closure sichern, nicht Index
+    el.style.outline = '3px solid #38bdf8';
+    el.style.outlineOffset = '2px';
+    setTimeout(() => {
+        el.style.outline = '';
+        el.style.outlineOffset = '';
+    }, 900);
+
+    // Zähler in Button-Text aktualisieren
+    const btn = document.getElementById('btn-' + type);
+    if (btn) btn.textContent = '▶ Zur ' + (type === 'inner' ? 'Feinauswahl' : 'Umfeld-Fundstelle')
+        + ' (' + (cycleIdx[type] + 1) + '/' + marks.length + ')';
+}
+
+// Beim Laden automatisch zur ersten Feinauswahl oder zum ersten Umfeld scrollen
+// und Index vorsetzen, damit der erste Button-Klick zum NÄCHSTEN Element geht
 window.addEventListener('load', () => {
-    const first = document.querySelector('.hl-inner') || document.querySelector('.hl-outer');
-    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const inner = document.querySelectorAll('.hl-inner');
+    const outer = document.querySelectorAll('.hl-outer');
+
+    if (inner.length) {
+        cycleIdx.inner = 0;
+        prevMark.inner = inner[0];
+        inner[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (outer.length) {
+        cycleIdx.outer = 0;
+        prevMark.outer = outer[0];
+        outer[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 });
 </script>
 </body>
