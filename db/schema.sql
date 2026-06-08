@@ -33,13 +33,18 @@ CREATE TABLE IF NOT EXISTS monitored_pages (
     user_id              INT UNSIGNED  NOT NULL,
     url                  VARCHAR(2048) NOT NULL,
     selection_text       TEXT          NULL COMMENT 'Der zu überwachende Textausschnitt',
-    inner_selection_text TEXT          NULL COMMENT 'Innerer Ausschnitt (Kerntext)',
+    inner_selection_text    TEXT          NULL COMMENT 'Innerer Ausschnitt (Kerntext)',
+    inner_selection_offsets JSON          NULL COMMENT 'Relative Zeichenposition der Feinauswahl im Umfeld-Text (letzter erfolgreicher Fund)',
     label                VARCHAR(255)  NULL     COMMENT 'Optionaler Anzeigename',
     status                ENUM('active','paused','error') NOT NULL DEFAULT 'active',
     check_interval_minutes INT UNSIGNED  NOT NULL DEFAULT 1440
                                         COMMENT 'Prüfintervall in Minuten (1440 = 1 Tag, 60 = 1 Stunde)',
     start_hour             TINYINT UNSIGNED NOT NULL DEFAULT 8
                                         COMMENT 'Startstunde des ersten Prüflaufs (0–23)',
+    last_checked_at        DATETIME      NULL
+                                        COMMENT 'Zeitpunkt der letzten tatsächlichen Prüfung (unabhängig vom Dump)',
+    check_count            INT UNSIGNED  NOT NULL DEFAULT 0
+                                        COMMENT 'Anzahl tatsächlich durchgeführter Prüfläufe',
     created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
                                        ON UPDATE CURRENT_TIMESTAMP,
