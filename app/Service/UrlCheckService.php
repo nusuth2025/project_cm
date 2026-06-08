@@ -32,32 +32,6 @@ class UrlCheckService
     }
 
     /**
-     * Rückwärtskompatible Kurzform.
-     */
-    public function isWorkingUrl(string $url): bool
-    {
-        return $this->check($url)->isUsable;
-    }
-
-    public function getHttpStatusCode(string $url): int
-    {
-        $handle = $this->buildCurlHandle($url);
-        curl_exec($handle);
-        $code = (int) (curl_getinfo($handle, CURLINFO_HTTP_CODE) ?: $this->fallbackStatusCode($url));
-        curl_close($handle);
-        return $code;
-    }
-
-    public function getContentType(string $url): string
-    {
-        $handle = $this->buildCurlHandle($url);
-        curl_exec($handle);
-        $type = $this->resolveContentType($handle, $url);
-        curl_close($handle);
-        return $type;
-    }
-
-    /**
      * GET-Fallback wenn der Server HEAD-Anfragen ablehnt (405).
      * Body wird sofort verworfen — es zählen nur Status und Content-Type.
      */
@@ -74,7 +48,9 @@ class UrlCheckService
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_MAXREDIRS      => 5,
             CURLOPT_TIMEOUT        => 10,
-            CURLOPT_WRITEFUNCTION  => static fn($_ch, $data) => strlen($data),
+            CURLOPT_WRITEFUNCTION  => static function($_curlHandle, string $data): int {
+                return strlen($data); // Body verwerfen, nur Länge zurückgeben (cURL-Pflicht)
+            },
         ]);
 
         curl_exec($handle);

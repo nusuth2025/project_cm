@@ -33,24 +33,32 @@ if (isset($opts['page-id'])) {
     $stmt->execute([$pageId, 'active']);
     $pages = $stmt->fetchAll();
 } elseif (isset($opts['all'])) {
-    // Fällig-Logik:
+    // Fällig-Logik basiert auf last_checked_at (Zeit der letzten tatsächlichen Prüfung).
+    // last_dump_at aus monitoring_dumps wäre falsch, seit Dumps nur noch bei Änderungen
+    // gespeichert werden — dann würde das Intervall nie zurückgesetzt.
     //
-    // Erstmalige Prüfung (last_dump_at IS NULL):
+    // Erstmalige Prüfung (last_checked_at IS NULL):
     //   Fällig, sobald die konfigurierte Startzeit heute erreicht ist.
     //   Liegt sie bereits in der Vergangenheit, ist der Monitor sofort fällig.
     //
-    // Folgeprüfung (last_dump_at IS NOT NULL):
-    //   Fällig, wenn letzter Dump + check_interval_minutes <= NOW().
+    // Folgeprüfung (last_checked_at IS NOT NULL):
+    //   Fällig, wenn letzte Prüfung + check_interval_minutes <= NOW().
+    //
+    //   Sekunden werden auf beiden Seiten auf 0 gesetzt (DATE_FORMAT auf HH:MM:00),
+    //   damit ein Monitor der um XX:45:18 geprüft wurde nicht erst beim
+    //   übernächsten Cron-Lauf (XX+30 min statt XX+15 min) als fällig gilt.
     $stmt = $db->prepare(
-        'SELECT mp.*,
-            (SELECT MAX(found_at) FROM monitoring_dumps WHERE monitored_page_id = mp.id) AS last_dump_at
-         FROM monitored_pages mp
-         WHERE mp.status = ?
-         HAVING
-             (last_dump_at IS NULL
-              AND NOW() >= DATE_ADD(CURDATE(), INTERVAL mp.start_hour HOUR))
-             OR (last_dump_at IS NOT NULL
-                 AND DATE_ADD(last_dump_at, INTERVAL mp.check_interval_minutes MINUTE) <= NOW())'
+        'SELECT * FROM monitored_pages
+         WHERE status = ?
+           AND (
+               (last_checked_at IS NULL
+                AND NOW() >= DATE_ADD(CURDATE(), INTERVAL start_hour HOUR))
+               OR (last_checked_at IS NOT NULL
+                   AND DATE_ADD(
+                       DATE_FORMAT(last_checked_at, \'%Y-%m-%d %H:%i:00\'),
+                       INTERVAL check_interval_minutes MINUTE
+                   ) <= DATE_FORMAT(NOW(), \'%Y-%m-%d %H:%i:00\'))
+           )'
     );
     $stmt->execute(['active']);
     $pages = $stmt->fetchAll();
@@ -78,6 +86,10 @@ foreach ($pages as $row) {
         }
 
         $dump = $monitoringService->runCheck($page);
+
+        // Prüfzeitpunkt und Zähler immer aktualisieren — unabhängig davon ob ein Dump gespeichert wurde.
+        $db->prepare('UPDATE monitored_pages SET last_checked_at = NOW(), check_count = check_count + 1 WHERE id = ?')
+           ->execute([$page->id]);
 
         if ($dump->changed) {
             echo "  ÄNDERUNG festgestellt — Dump #{$dump->id} gespeichert." . PHP_EOL;

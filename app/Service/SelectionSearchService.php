@@ -3,8 +3,45 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+/**
+ * Zweiphasige Positionssuche für Textauswahlen im HTML.
+ *
+ * Phase 1: Greedy-Forward mit Rechts-Advance.
+ *   Startpunkt-Hint: erste 3 Wörter als Phrase gesucht, um häufige Einzelwörter
+ *   in Navigation/Header zu überspringen.
+ *   Für jedes Wort wird die Position nach dem Vorgänger gesucht. Kommt dasselbe
+ *   Wort erneut vor dem nächsten vor, wird die spätere Position übernommen.
+ *
+ * Phase 2: Iterative Engstellen-Verfeinerung.
+ *   Wiederholt Forward-Passes über die gefundenen Positionen.
+ *   Wenn das nächste Wort früher auftaucht als gespeichert, wird das aktuelle
+ *   Wort dichter herangezogen. Stoppt beim Fixpunkt → minimaler Span.
+ *
+ * Beispiel:
+ *   HTML: "Samsung Galaxy Tab kaufen … Samsung Galaxy Note kaufen … Samsung Galaxy Tab S9 kaufen"
+ *   Suche: "Samsung Galaxy Tab S9"
+ *   Phase 1: Samsung=0,  Galaxy=8  → Span 76 Zeichen (falsche Instanz)
+ *   Phase 2: Samsung=53, Galaxy=61 → Span 21 Zeichen (korrekte Instanz) ✓
+ */
 class SelectionSearchService
 {
+    // ── Vorverarbeitung ───────────────────────────────────────────────────────
+
+    /**
+     * Ersetzt jeden HTML-Tag (<tag ...>) durch gleich viele Leerzeichen.
+     * Die String-Länge und damit alle Byte-Positionen bleiben erhalten —
+     * Attributwerte (href, src, …) werden für Suchen unsichtbar.
+     * Nützlich um findPositions() auf sichtbaren Text zu beschränken.
+     */
+    public function maskHtmlTags(string $html): string
+    {
+        return preg_replace_callback('/<[^>]*>/', function (array $m): string {
+            return str_repeat(' ', strlen($m[0]));
+        }, $html) ?? $html;
+    }
+
+    // ── Tokenisierung ─────────────────────────────────────────────────────────
+
     /**
      * Normalisiert Whitespace und zerlegt den Auswahltext in einzelne Wörter.
      * @return string[]
@@ -24,25 +61,11 @@ class SelectionSearchService
         return $words;
     }
 
+    // ── Positionssuche: Phase 1 + Phase 2 ────────────────────────────────────
+
     /**
      * Findet alle Wörter der Auswahl im HTML und gibt ihre Byte-Positionen zurück.
-     *
-     * Algorithmus — Phase 1 der ursprünglichen checkIfWorkingSelection():
-     *
-     *   Startpunkt-Hint: Die ersten 3 Wörter werden als Phrase gesucht.
-     *   Ist diese Phrase direkt im HTML vorhanden (z. B. "Samsung Galaxy M35"
-     *   im Produkttitel), wird die Suche von dort aus gestartet. Das verhindert,
-     *   dass häufige Einzelwörter (wie "Samsung" in der Navigation) einen falschen
-     *   Startanker setzen.
-     *
-     *   Greedy-Forward mit Rechts-Advance:
-     *   Für jedes Wort wird die erste Position nach dem Vorgänger gesucht.
-     *   Kommt dasselbe Wort erneut vor dem nächsten Wort vor, wird diese spätere
-     *   Position übernommen. So landet z. B. das kurze "ab" vor "198,00 €" direkt
-     *   an der richtigen Stelle und nicht irgendwo früher im Text.
-     *
-     *   Terminiert garantiert in O(n · k): n = Wörteranzahl, k = max. Wiederholungen
-     *   des häufigsten Worts im Abstand zum jeweils nächsten.
+     * Führt Phase 1 (Greedy-Forward) und Phase 2 (Engstellen-Verfeinerung) aus.
      *
      * @return int[]  Flaches [start, end, start, end, …] Array oder [] wenn nicht gefunden.
      */
@@ -55,17 +78,13 @@ class SelectionSearchService
 
         $n = count($words);
 
+        // ── Phase 1: Greedy-Forward mit Rechts-Advance ────────────────────────
         // Startpunkt-Hint: erste 3 Wörter als Phrase suchen
-        // Ist "Samsung Galaxy M35" als zusammenhängender Text findbar (z. B. im <h1>),
-        // starten wir direkt dort, statt bei der ersten "Samsung"-Erwähnung in der Nav.
         $phraseWords = array_slice($words, 0, min(3, $n));
-        $phrase      = implode(' ', $phraseWords);
-        $hintPos     = strpos($htmlContent, $phrase);
-        $startFrom   = ($hintPos !== false) ? $hintPos : 0;
+        $hintPos     = strpos($htmlContent, implode(' ', $phraseWords));
+        $prevEnd     = ($hintPos !== false) ? $hintPos : 0;
 
-        // ── Greedy-Forward mit Rechts-Advance ─────────────────────────────────
         $positions = array_fill(0, $n * 2, 0);
-        $prevEnd   = $startFrom;
 
         for ($x = 0; $x < $n; $x++) {
             $strpos = strpos($htmlContent, $words[$x], $prevEnd);
@@ -73,8 +92,6 @@ class SelectionSearchService
                 return [];
             }
 
-            // Advance: wenn das gleiche Wort nochmal vor dem nächsten kommt,
-            // nehme die spätere Position (näher am Nachfolger)
             if ($x < $n - 1) {
                 while (true) {
                     $nextsamepos = strpos($htmlContent, $words[$x],     $strpos + 1);
@@ -93,8 +110,87 @@ class SelectionSearchService
             $prevEnd = $strpos + strlen($words[$x]);
         }
 
+        // ── Phase 2: Iterative Engstellen-Verfeinerung ────────────────────────
+        if ($n > 1) {
+            $positions = $this->refinePositions($htmlContent, $words, $positions);
+        }
+
         return $positions;
     }
+
+    /**
+     * Phase 2: Iterative Engstellen-Verfeinerung.
+     *
+     * Pro Iteration (Forward-Pass):
+     *   Für jedes Wort x (außer dem letzten):
+     *     1. Suche Wort x ab Ende des Vorgängers.
+     *     2. Falls Wort x+1 noch VOR seiner gespeicherten Position auftaucht:
+     *        → Suche Wort x ab dieser früheren Fundstelle (dichter heran).
+     *     3. Advance: Nimm das rechteste Vorkommen von x, das noch vor
+     *        der gespeicherten Position von x+1 liegt.
+     *   Wenn in einem vollständigen Pass keine Position geändert wurde → Fixpunkt.
+     *
+     * Konvergenz: Garantiert in ≤ n Iterationen.
+     *
+     * @param  string[] $words
+     * @param  int[]    $positions  [start, end, …] aus Phase 1
+     * @return int[]
+     */
+    private function refinePositions(string $html, array $words, array $positions): array
+    {
+        $n = count($words);
+
+        for ($iter = 0; $iter < $n; $iter++) {
+            $changed = false;
+            $prevEnd = $positions[0];
+
+            for ($x = 0; $x < $n; $x++) {
+                $strpos = strpos($html, $words[$x], $prevEnd);
+                if ($strpos === false) {
+                    return $positions;
+                }
+
+                if ($x < $n - 1) {
+                    $nextpos = $positions[($x + 1) * 2];
+
+                    $next_x = strpos($html, $words[$x + 1], $strpos + 1);
+                    if ($next_x !== false && $next_x < $nextpos) {
+                        $closer = strpos($html, $words[$x], $next_x + 1);
+                        if ($closer !== false) {
+                            $strpos = $closer;
+                        }
+                    }
+
+                    while (true) {
+                        $nextsame = strpos($html, $words[$x], $strpos + 1);
+                        if ($nextsame !== false && $nextsame < $nextpos) {
+                            $strpos = $nextsame;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                $newEnd = $strpos + strlen($words[$x]);
+
+                if ($positions[$x * 2] !== $strpos) {
+                    $positions[$x * 2]     = $strpos;
+                    $positions[$x * 2 + 1] = $newEnd;
+                    $changed = true;
+                }
+
+                $prevEnd = $newEnd;
+            }
+
+            if (!$changed) {
+                break;
+            }
+        }
+
+        return $positions;
+    }
+
+    // ── Diagnose ──────────────────────────────────────────────────────────────
 
     /**
      * Gibt Index und Text des ersten nicht gefundenen Worts zurück, oder null.
@@ -115,40 +211,13 @@ class SelectionSearchService
         return null;
     }
 
-    /**
-     * Baut einen mit |#|Wort|##| markierten String aus dem Positionsarray auf.
-     *
-     * @param int[] $positions
-     */
-    public function buildMarkedContent(string $htmlContent, array $positions): string
-    {
-        if (empty($positions)) {
-            return $htmlContent;
-        }
-
-        $result = substr($htmlContent, 0, $positions[0]);
-
-        for ($i = 0; $i < count($positions); $i += 2) {
-            $start = $positions[$i];
-            $end   = $positions[$i + 1];
-
-            $between = '';
-            if ($i > 0 && $start > $positions[$i - 1] + 1) {
-                $between = substr($htmlContent, $positions[$i - 1] + 1, $start - ($positions[$i - 1] + 1));
-            }
-
-            $result .= $between;
-            $result .= '|#|' . substr($htmlContent, $start, $end - $start) . '|##|';
-        }
-
-        return $result;
-    }
+    // ── Ausgabe / Darstellung ─────────────────────────────────────────────────
 
     /**
      * Erzeugt HTML mit farbig hervorgehobenen Fundstellen für die Debug-Ansicht.
      *
-     * Äußere Fundstellen  → gelb  (CSS-Klasse hl-outer)
-     * Innere Fundstellen  → orange (CSS-Klasse hl-inner)
+     * Äußere Fundstellen → gelb  (CSS-Klasse hl-outer)
+     * Innere Fundstellen → orange (CSS-Klasse hl-inner)
      *
      * @param int[] $outerPositions  [start, end, …]
      * @param int[] $innerPositions  [start, end, …]  (relativ zum selben $html)
@@ -167,25 +236,44 @@ class SelectionSearchService
         $showTo   = min(strlen($html), end($outerPositions) + $contextChars);
         $region   = substr($html, $showFrom, $showTo - $showFrom);
 
-        $toRelative = fn(int $p): int => $p - $showFrom;
+        // Äußere Spans, die sich mit einem inneren Span überlappen, werden als hl-inner gerendert.
+        // Overlap-Prüfung statt exakter Startposition-Gleichheit, damit auch leichte Positions-
+        // abweichungen zwischen verschiedenen Suchpfaden korrekt behandelt werden.
+        $innerRanges = array_chunk($innerPositions, 2);
 
         $spans = [];
         for ($i = 0; $i < count($outerPositions); $i += 2) {
-            $s = $toRelative($outerPositions[$i]);
-            $e = $toRelative($outerPositions[$i + 1]);
+            $oStart = $outerPositions[$i];
+            $oEnd   = $outerPositions[$i + 1];
+
+            $overlaps = false;
+            foreach ($innerRanges as [$is, $ie]) {
+                if ($oStart < $ie && $oEnd > $is) {
+                    $overlaps = true;
+                    break;
+                }
+            }
+            if ($overlaps) {
+                continue; // wird als hl-inner gerendert
+            }
+
+            $s = $oStart - $showFrom;
+            $e = $oEnd   - $showFrom;
             if ($s >= 0 && $e <= strlen($region)) {
                 $spans[] = [$s, $e, 'outer'];
             }
         }
         foreach (array_chunk($innerPositions, 2) as [$s, $e]) {
-            $rs = $toRelative($s);
-            $re = $toRelative($e);
+            $rs = $s - $showFrom;
+            $re = $e - $showFrom;
             if ($rs >= 0 && $re <= strlen($region)) {
                 $spans[] = [$rs, $re, 'inner'];
             }
         }
 
-        usort($spans, fn($a, $b) => $a[0] <=> $b[0]);
+        usort($spans, function(array $a, array $b): int {
+            return $a[0] <=> $b[0];
+        });
 
         $out = '';
         $pos = 0;
