@@ -115,10 +115,10 @@ HTML;
     {
         // Vordefinierte Erklärung aus dem Monitoring-Lauf (z. B. "Umfeld nicht gefunden")
         if ($dump->changeNote !== '') {
-            $lines = array_map(
-                fn($l) => htmlspecialchars($l, ENT_QUOTES, 'UTF-8'),
-                explode("\n", $dump->changeNote)
-            );
+            $lines = [];
+            foreach (explode("\n", $dump->changeNote) as $l) {
+                $lines[] = htmlspecialchars($l, ENT_QUOTES, 'UTF-8');
+            }
 
             // Erste Zeile = Überschrift, Rest = Details
             $title  = array_shift($lines);

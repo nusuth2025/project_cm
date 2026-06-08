@@ -7,6 +7,5 @@ enum PostState: string
 {
     case NotSet  = 'not_set';
     case Valid   = 'valid';
-    case Invalid = 'invalid';
     case Problem = 'problem'; // Wort in der Auswahl nicht gefunden
 }

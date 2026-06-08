@@ -15,15 +15,6 @@ define('DB_NAME', 'contentmonitor');
 define('DB_USER', 'contentmonitor');
 define('DB_PASS', 'changeme');
 
-function debug(string $label = '', mixed ...$vars): void
-{
-    if (!DEBUG_MODE) return;
-    echo '<pre>[DEBUG] ' . htmlspecialchars($label) . '</pre>';
-    foreach ($vars as $var) {
-        var_dump($var);
-    }
-}
-
 // PSR-4-Autoloader: App\Foo\Bar → app/Foo/Bar.php
 spl_autoload_register(function (string $class): void {
     if (!str_starts_with($class, 'App\\')) {

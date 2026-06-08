@@ -5,18 +5,6 @@ namespace App\Service;
 
 class SessionService
 {
-    public function ensureSessionId(): void
-    {
-        if (!isset($_SESSION['S_ID'])) {
-            $_SESSION['S_ID'] = 'monitor' . time();
-        }
-    }
-
-    public function getSessionId(): ?string
-    {
-        return $_SESSION['S_ID'] ?? null;
-    }
-
     public function setUrl(string $url): void
     {
         $_SESSION['S_URL'] = $url;
@@ -75,7 +63,6 @@ class SessionService
     public function clearMonitorFlow(): void
     {
         unset(
-            $_SESSION['S_ID'],
             $_SESSION['S_URL'],
             $_SESSION['S_SELECTION'],
             $_SESSION['S_INNERSELECTION']

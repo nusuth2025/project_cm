@@ -10,10 +10,11 @@ use App\Controller\MonitorAddController;
 use App\Controller\MonitorViewController;
 use App\Controller\MonitorEditController;
 use App\Controller\MonitorDeleteController;
+use App\Controller\MonitorDumpDeleteController;
 use App\Controller\MonitorDebugController;
+use App\Controller\UserSettingsController;
 
 $session = new SessionService();
-$session->ensureSessionId();
 
 // URI ohne Query-String, führende/nachfolgende Slashes entfernen
 $uri = '/' . trim(strtok($_SERVER['REQUEST_URI'], '?'), '/');
@@ -25,10 +26,12 @@ $routes = [
     ['GET|POST', '/',                    HomeController::class],
     ['GET',      '/list',                MonitorListController::class],
     ['GET|POST', '/add',                 MonitorAddController::class],
+    ['POST',     '#^/monitor/(\d+)/dump/(\d+)/delete$#', MonitorDumpDeleteController::class],
     ['GET',      '#^/monitor/(\d+)/quelle$#', MonitorDebugController::class],
     ['GET',      '#^/monitor/(\d+)$#',        MonitorViewController::class],
     ['GET|POST', '#^/edit/(\d+)$#',      MonitorEditController::class],
     ['POST',     '#^/delete/(\d+)$#',    MonitorDeleteController::class],
+    ['GET|POST', '/settings',            UserSettingsController::class],
     ['GET|POST', '/login',               LoginController::class],
     ['GET|POST', '/logout',              LogoutController::class],
 ];
