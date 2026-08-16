@@ -16,6 +16,7 @@ Datenbankverbindungen geöffnet werden.
 
 ```php
 // app/Model/DB.php
+
 private static ?\PDO $instance = null;
 
 public static function getInstance(): \PDO
@@ -23,6 +24,7 @@ public static function getInstance(): \PDO
     if (self::$instance === null) { ... }
     return self::$instance;
 }
+
 ```
 
 ---

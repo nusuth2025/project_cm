@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Service;
@@ -271,7 +272,7 @@ class SelectionSearchService
             }
         }
 
-        usort($spans, function(array $a, array $b): int {
+        usort($spans, function (array $a, array $b): int {
             return $a[0] <=> $b[0];
         });
 
@@ -284,8 +285,8 @@ class SelectionSearchService
             $out .= htmlspecialchars(substr($region, $pos, $start - $pos));
             $class = $type === 'inner' ? 'hl-inner' : 'hl-outer';
             $out .= '<mark class="' . $class . '">'
-                  . htmlspecialchars(substr($region, $start, $end - $start))
-                  . '</mark>';
+                . htmlspecialchars(substr($region, $start, $end - $start))
+                . '</mark>';
             $pos = $end;
         }
         $out .= htmlspecialchars(substr($region, $pos));

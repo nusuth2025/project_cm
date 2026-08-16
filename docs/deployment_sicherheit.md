@@ -61,20 +61,61 @@ Options -Indexes
 
 ---
 
-## 3. Session-Härtung — 3 Zeilen in `index.php`
+## 3. Session-Härtung — 3 Zeilen Code oder 3 Zeilen `.htaccess`
 
 Aktuell wird `session_start()` ohne Sicherheitsoptionen aufgerufen. Auf einem
-öffentlichen Server müssen Session-Cookies gesichert werden:
+öffentlichen Server müssen Session-Cookies gesichert werden. Drei Varianten stehen
+zur Wahl:
+
+**Variante A — `app/config.php`** (empfohlen für dieses Projekt)
+
+`session_set_cookie_params()` muss vor `session_start()` aufgerufen werden.
+Da `config.php` in `index.php` als erstes per `require_once` eingebunden wird
+und `session_start()` erst danach folgt, ist die Reihenfolge korrekt:
 
 ```php
-// index.php — vor session_start()
+// app/config.php — am Ende der Datei, nach den defines
 session_set_cookie_params([
     'lifetime' => 0,
     'secure'   => true,        // nur über HTTPS
     'httponly' => true,        // kein JavaScript-Zugriff
     'samesite' => 'Strict',    // kein Cross-Site-Zugriff
 ]);
+```
+
+**Variante B — `index.php`**
+
+Alternativ direkt im Einstiegspunkt, unmittelbar vor `session_start()`:
+
+```php
+// index.php — vor session_start()
+session_set_cookie_params([
+    'lifetime' => 0,
+    'secure'   => true,
+    'httponly' => true,
+    'samesite' => 'Strict',
+]);
 session_start();
+```
+
+**Variante C — `.htaccess`** (kein Code-Eingriff nötig)
+
+Die Parameter lassen sich auch auf Apache-Ebene setzen. Vorteil: keine
+Änderung am PHP-Code, gilt für den gesamten VHost:
+
+```apache
+php_flag  session.cookie_secure   On
+php_flag  session.cookie_httponly On
+php_value session.cookie_samesite Strict
+```
+
+Alternativ in `php.ini` für eine serverweite Einstellung:
+
+```ini
+session.cookie_secure   = 1
+session.cookie_httponly = 1
+session.cookie_samesite = Strict
+session.cookie_lifetime = 0
 ```
 
 **Aufwand:** 5 Minuten.
@@ -117,15 +158,101 @@ expose_php     = Off     ; PHP-Version nicht im HTTP-Header verraten
 
 **Was fehlt:** Alle POST-Formulare haben keinen CSRF-Token. Ein Angreifer könnte
 einen eingeloggten Nutzer durch eine präparierte Seite dazu bringen, ungewollte
-Aktionen auszuführen (z. B. Monitore löschen).
+Aktionen auszuführen (z. B. Monitore löschen oder das Passwort ändern).
+
+**Wie ein Angriff aussieht:**
+
+1. Nutzer ist auf `contentmonitor.example.de` eingeloggt — der Session-Cookie liegt im Browser.
+2. Nutzer besucht eine beliebige andere Seite, die folgendes enthält:
+   ```html
+   <img src="https://contentmonitor.example.de/monitor/delete" style="display:none">
+   <!-- oder ein auto-submit-Formular via JavaScript -->
+   ```
+3. Der Browser schickt die Anfrage automatisch mit dem Session-Cookie — der Server
+   sieht eine scheinbar legitime Anfrage vom eingeloggten Nutzer.
 
 **Risikobewertung:** Niedrig bis mittel — die Anwendung erfordert Login, ist also
-kein öffentliches Formular. Dennoch sollte CSRF-Schutz eingebaut werden.
+kein öffentliches Formular. Bei `SameSite=Strict` (siehe Abschnitt 3) sind
+einfache GET-basierte Angriffe bereits blockiert. POST-Formulare bleiben aber
+angreifbar, wenn der Nutzer direkt auf einen Link klickt, der zu einer
+Angreifer-Seite führt.
 
-**Umsetzung:** Token in Session speichern, in jedes Formular als Hidden-Field
-einfügen, in AbstractController vor jeder POST-Verarbeitung prüfen.
+---
 
-**Aufwand:** 2–3 Stunden (alle Formulare müssen angepasst werden).
+### Umsetzung in 3 Schritten
+
+**Schritt 1 — Token erzeugen und prüfen im `AbstractController`**
+
+```php
+// app/Controller/AbstractController.php
+
+protected function generateCsrfToken(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+protected function verifyCsrfToken(): void
+{
+    $token = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
+        http_response_code(403);
+        exit('Ungültige Anfrage (CSRF).');
+    }
+}
+```
+
+`hash_equals()` verhindert Timing-Angriffe (konstante Vergleichszeit unabhängig
+davon, wie viele Zeichen übereinstimmen).
+
+---
+
+**Schritt 2 — Token in jedes Formular als Hidden-Field einfügen**
+
+In allen View-Templates (`monitor/edit.php`, `monitor/add.php`, `monitor/list.php`,
+`auth/login.php`, `user/settings.php` usw.) innerhalb des `<form>`-Tags:
+
+```php
+<input type="hidden" name="csrf_token"
+       value="<?= htmlspecialchars($this->generateCsrfToken()) ?>">
+```
+
+Da Views über `AbstractController::render()` aufgerufen werden und `$this`
+dort nicht direkt verfügbar ist, übergibt man den Token als Template-Variable:
+
+```php
+// Im Controller, vor dem render()-Aufruf:
+$this->render('monitor/edit', [
+    'csrf_token' => $this->generateCsrfToken(),
+    // ... weitere Daten
+]);
+```
+
+```php
+<!-- Im Template: -->
+<input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+```
+
+---
+
+**Schritt 3 — Token bei jeder POST-Verarbeitung prüfen**
+
+In jedem Controller, der POST-Daten verarbeitet (aktuell: `MonitorDeleteController`,
+`MonitorEditController`, `UserSettingsController` und weitere), ganz am Anfang
+des POST-Zweigs:
+
+```php
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $this->verifyCsrfToken();   // ← neu, vor jeder weiteren Verarbeitung
+    // ... bisheriger Code
+}
+```
+
+---
+
+**Aufwand:** 2–3 Stunden (alle Formulare und POST-Controller müssen angepasst werden).
 
 ---
 
